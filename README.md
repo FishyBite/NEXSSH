@@ -14,7 +14,11 @@ It keeps a shell and the files you’re working on in the same window. Open a sa
 
 ![VEXSSH Hosts view in dark mode, showing five sample connections and the workspace sidebar](docs/vexssh-workspace.png)
 
-*Hosts view with sample connections.*
+*Hosts view with sample connections for Ubuntu Server, Debian Server, Raspberry Pi, Proxmox, and Home Assistant.*
+
+![VEXSSH Databases view showing a SQLite connection, three tables, a SQL query, and four result rows](docs/vexssh-databases.png)
+
+*Database workspace with a sample SQLite inventory, a SQL query, and its results.*
 
 
 ## What it does
