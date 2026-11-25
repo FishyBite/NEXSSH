@@ -178,7 +178,7 @@ impl AppState {
         Ok(())
     }
     pub fn open_bound_session(&self, binding: &SessionBinding) -> Result<ssh2::Session, String> {
-        // Profile and trust changes share this lock until SSH authenticates, so the validated route cannot change during a new connection.
+        // Hold this lock through authentication to keep the verified route stable.
         let _guard = self.inner.config_lock.lock().map_err(|e| e.to_string())?;
         self.check_binding(binding)?;
         self.open_session(&binding.host_id)

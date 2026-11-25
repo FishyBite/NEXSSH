@@ -78,7 +78,7 @@ export default function DatabaseWorkspace({ workspace, sessions, hosts = [], act
     setTabProfiles(current => ({ ...current, [tab.tabId || tab.sessionId]: profile.id }));
   }
   function save(profile: DatabaseProfile) {
-    // Read from disk again so another completed connection cannot be overwritten by a pending form.
+    // Re-read saved profiles so a pending form cannot overwrite another connection.
     const stored = readProfiles(workspace);
     const list = stored.some(p => p.id === profile.id) ? stored.map(p => p.id === profile.id ? profile : p) : [...stored, profile];
     saveProfiles(workspace, list); setProfiles(list);

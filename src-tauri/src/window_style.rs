@@ -201,7 +201,6 @@ pub fn initialize(app: &tauri::AppHandle) -> tauri::Result<()> {
         Theme::Light
     } else { theme };
     apply_on_main_thread(app, native_theme);
-    // Keep the native window hidden until the frontend is ready to reveal it.
     app.manage(StartupWindow {
         revealed: AtomicBool::new(false),
     });

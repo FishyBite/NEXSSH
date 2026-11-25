@@ -1,6 +1,5 @@
 import { request } from "./api";
 
-// Clipboard operations from different panes share the same Windows clipboard.
 let pending = Promise.resolve();
 
 function inOrder<T>(operation: () => Promise<T>): Promise<T> {

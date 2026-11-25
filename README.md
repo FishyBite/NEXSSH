@@ -8,9 +8,7 @@
 
 <p align="center"><a href="#preview">Screenshots</a> · <a href="#download">Download</a></p>
 
-VEXSSH is a Windows desktop app for SSH, remote file transfers, serial consoles, and database connections.
-
-It keeps a shell and the files you’re working on in the same window. Open a saved host, switch to SFTP to move or edit a file, and switch back to the same shell.
+Open a saved host, switch to SFTP to move or edit a file, then return to the same shell. VEXSSH runs on Windows.
 
 ## Preview
 
@@ -32,8 +30,7 @@ It keeps a shell and the files you’re working on in the same window. Open a sa
 
 ![VEXSSH Databases view showing a SQLite connection, three tables, a SQL query, and four result rows](docs/vexssh-databases.png)
 
-*Database workspace with a sample SQLite inventory, a SQL query, and its results.*
-
+*Database workspace with a sample SQLite inventory.*
 
 ### Serial console
 

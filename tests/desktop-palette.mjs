@@ -441,7 +441,7 @@ try {
           .click();
         await expect(page.getByRole("tab")).toHaveCount(1);
         await expect(page.getByRole("dialog")).not.toBeVisible();
-        // Preserve this regression matrix's docked/expanded starting layout.
+        // Connecting expands the terminal. Restore the docked layout for that test case.
         if (!expanded) await page.getByRole("button", {name:"Restore layout", exact:true}).click();
         for (let index = 0; index < 5; index++) {
           await paletteAction("Open new terminal");
