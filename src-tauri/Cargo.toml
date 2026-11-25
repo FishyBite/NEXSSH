@@ -1,11 +1,11 @@
 [package]
-name = "nexssh"
-version = "1.0.0-rc.7"
+name = "vexssh"
+version = "1.0.0-rc.8"
 edition = "2021"
-description = "NEXSSH desktop SSH workspace"
+description = "VEXSSH desktop SSH workspace"
 
 [lib]
-name = "nexssh_lib"
+name = "vexssh_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

@@ -20,7 +20,7 @@ export class WorkspaceBoundary extends Component<
     if (!this.state.failed) return this.props.children;
     return (
       <main className="workspace-recovery" role="alert">
-        <img src="/nexssh.svg" alt="" width={48} height={48} />
+        <img src="/vexssh.svg" alt="" width={48} height={48} />
         <h1>Workspace display interrupted</h1>
         <p>
           Restore the workspace view to return to your hosts and open sessions.

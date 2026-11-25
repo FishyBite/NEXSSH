@@ -586,7 +586,7 @@ mod tests {
     }
     #[test]
     fn refuses_changed_file_and_preserves_backup() {
-        let folder = std::env::temp_dir().join(format!("nexssh-editor-{}", uuid::Uuid::new_v4()));
+        let folder = std::env::temp_dir().join(format!("vexssh-editor-{}", uuid::Uuid::new_v4()));
         fs::create_dir(&folder).unwrap();
         let file = folder.join("sample.conf");
         fs::write(&file, b"original").unwrap();
@@ -632,7 +632,7 @@ mod tests {
     }
     #[test]
     fn local_rename_never_overwrites_an_existing_file() {
-        let folder = std::env::temp_dir().join(format!("nexssh-rename-{}", uuid::Uuid::new_v4()));
+        let folder = std::env::temp_dir().join(format!("vexssh-rename-{}", uuid::Uuid::new_v4()));
         fs::create_dir(&folder).unwrap();
         let source = folder.join("source");
         let destination = folder.join("destination");

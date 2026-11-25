@@ -25,8 +25,8 @@ const fixture = JSON.parse(
     "utf8",
   ),
 );
-if (process.env.NEXSSH_TERMINAL_CLIPBOARD === "1") delete fixture.state_load.settings.copyOnSelect;
-if (process.env.NEXSSH_WINDOW_SCROLL === "1") {
+if (process.env.VEXSSH_TERMINAL_CLIPBOARD === "1") delete fixture.state_load.settings.copyOnSelect;
+if (process.env.VEXSSH_WINDOW_SCROLL === "1") {
   const host = fixture.state_load.hosts[0];
   fixture.state_load.settings.sidebarCollapsed = true;
   for (let n = 1; n <= 30; n++) fixture.state_load.hosts.push({...host, id:"scroll-" + n, name:"Server " + n});
@@ -35,7 +35,7 @@ if (process.env.NEXSSH_WINDOW_SCROLL === "1") {
     destination:"/sample/", status:"completed", totalBytes:32, transferredBytes:32, speedBytesPerSecond:0, etaSeconds:null, startedAt:n+1,
   }));
 }
-if (process.env.NEXSSH_HOST_CARDS === "1") {
+if (process.env.VEXSSH_HOST_CARDS === "1") {
   const [first, second] = fixture.state_load.hosts;
   Object.assign(first, {name:"OpenShift", hostname:"192.0.2.172", username:"core", environmentLabel:"production",
     icon:"cloud", favorite:true});
@@ -46,7 +46,7 @@ if (process.env.NEXSSH_HOST_CARDS === "1") {
     {...first,id:"card-hsm",name:"HSM 10G",hostname:"192.0.2.25",username:"cli",authMethod:"agent",icon:"terminal",favorite:false,environmentLabel:"lab"},
   );
 }
-if (process.env.NEXSSH_SESSION_TARGETS === "1" || process.env.NEXSSH_MIXED_VIEWS === "1") {
+if (process.env.VEXSSH_SESSION_TARGETS === "1" || process.env.VEXSSH_MIXED_VIEWS === "1") {
   const [hostA, hostB] = fixture.state_load.hosts;
   Object.assign(hostB, { authMethod: hostA.authMethod, keySource: hostA.keySource, identityFile: hostA.identityFile });
   fixture.state_load.snippets = [hostA, hostB].map(host => ({
@@ -54,13 +54,13 @@ if (process.env.NEXSSH_SESSION_TARGETS === "1" || process.env.NEXSSH_MIXED_VIEWS
     command: "echo original", category: "Fixture", favorite: false,
   }));
 }
-if (process.env.NEXSSH_REMOTE_TERMINAL === "1") {
+if (process.env.VEXSSH_REMOTE_TERMINAL === "1") {
   fixture.state_load.snippets = [
     {id:"pods", name:"List pods", command:"oc get pods", scope:"host", hostId:"fixture-key", category:"OpenShift", favorite:true},
     {id:"wrong", name:"Wrong server", command:"oc get nodes", scope:"host", hostId:"fixture-password", category:"OpenShift", favorite:false}
   ];
 }
-if (process.env.NEXSSH_REORDER_TABS === "1") {
+if (process.env.VEXSSH_REORDER_TABS === "1") {
   for (let index = 2; index <= 8; index++) {
     fixture.state_load.hosts.push({
       ...fixture.state_load.hosts[0],
@@ -70,13 +70,13 @@ if (process.env.NEXSSH_REORDER_TABS === "1") {
     });
   }
 }
-if (process.env.NEXSSH_ENHANCEMENTS === "1") {
+if (process.env.VEXSSH_ENHANCEMENTS === "1") {
   fixture.state_load.groups = [{ id: "fixture-ops", name: "Operations", workspaceId: "fixture-workspace" }];
   fixture.state_load.terminalProfiles = [{ id: "fixture-readable", name: "Readable mono", fontFamily: "Consolas", fontSize: 16, cursorStyle: "bar", copyOnSelect: false, environment: {}, terminalTheme: "dark" }];
   fixture.state_load.settings.restoreWorkspace = true;
 }
 const dist = resolve(
-  process.env.NEXSSH_REPRO_DIST ||
+  process.env.VEXSSH_REPRO_DIST ||
     fileURLToPath(new URL("../dist/", import.meta.url)),
 );
 const tauri = JSON.parse(
@@ -105,7 +105,7 @@ const server = createServer(async (req, res) => {
     if (!path.startsWith(dist + sep) && path !== resolve(dist, "index.html"))
       throw new Error("Invalid path");
     let content = await readFile(path);
-    if (process.env.NEXSSH_TERMINAL_RETRY === "1" && extname(path) === ".js") {
+    if (process.env.VEXSSH_TERMINAL_RETRY === "1" && extname(path) === ".js") {
       const source = content.toString("utf8");
       const marker = '"aria-label":"SSH terminals"';
       if (source.includes(marker)) {
@@ -129,10 +129,10 @@ const browser = await chromium.launch({ channel: "msedge", headless: true });
 const reports = [];
 try {
   for (const scrollResult of (
-    process.env.NEXSSH_REPRO_SCROLL || "promise,void"
+    process.env.VEXSSH_REPRO_SCROLL || "promise,void"
   ).split(","))
-    for (const expanded of process.env.NEXSSH_REPRO_EXPANDED
-      ? [process.env.NEXSSH_REPRO_EXPANDED === "true"]
+    for (const expanded of process.env.VEXSSH_REPRO_EXPANDED
+      ? [process.env.VEXSSH_REPRO_EXPANDED === "true"]
       : [false, true]) {
       const context = await browser.newContext({
         viewport: { width: 1380, height: 900 },
@@ -147,8 +147,8 @@ try {
           const state = (window.fixture = {
             calls: [],
             events: [],
-            config: persistConfig && localStorage.getItem("nexssh.fixture.config")
-              ? JSON.parse(localStorage.getItem("nexssh.fixture.config"))
+            config: persistConfig && localStorage.getItem("vexssh.fixture.config")
+              ? JSON.parse(localStorage.getItem("vexssh.fixture.config"))
               : structuredClone(fixture.state_load),
             sessions: new Map(),
             themeApplications: [],
@@ -207,7 +207,7 @@ try {
                 return null;
               }
               if (command === "plugin:window|scale_factor") return 1;
-              if (command === "plugin:dialog|open") return "C:\\fixture\\nexssh-update.zip";
+              if (command === "plugin:dialog|open") return "C:\\fixture\\vexssh-update.zip";
               if (command !== "request")
                 throw new Error("Unexpected native command " + command);
               const { action, payload = {} } = args;
@@ -222,7 +222,7 @@ try {
               }
               if (action === "state_save") {
                 state.config = structuredClone(payload.config);
-                if (persistConfig) localStorage.setItem("nexssh.fixture.config", JSON.stringify(state.config));
+                if (persistConfig) localStorage.setItem("vexssh.fixture.config", JSON.stringify(state.config));
                 return { ok: true };
               }
               if (action === "keys_list" || action === "transfer_list")
@@ -343,10 +343,10 @@ try {
           fixture,
           expanded,
           scrollResult,
-          injectError: process.env.NEXSSH_INJECT_RENDER_ERROR === "1" || process.env.NEXSSH_TERMINAL_RETRY === "1",
-          persistConfig: process.env.NEXSSH_ENHANCEMENTS === "1" || process.env.NEXSSH_SIDEBAR_NAVIGATION === "1",
+          injectError: process.env.VEXSSH_INJECT_RENDER_ERROR === "1" || process.env.VEXSSH_TERMINAL_RETRY === "1",
+          persistConfig: process.env.VEXSSH_ENHANCEMENTS === "1" || process.env.VEXSSH_SIDEBAR_NAVIGATION === "1",
           currentVersion: tauri.version,
-          terminalClipboard: process.env.NEXSSH_TERMINAL_CLIPBOARD === "1",
+          terminalClipboard: process.env.VEXSSH_TERMINAL_CLIPBOARD === "1",
         },
       );
       const page = await context.newPage();
@@ -394,27 +394,27 @@ try {
       }
       try {
         await page.goto(url);
-        if (process.env.NEXSSH_SERIAL === "1") {
+        if (process.env.VEXSSH_SERIAL === "1") {
           const { exerciseSerial } = await import("./desktop-serial.mjs");
           await exerciseSerial({ page, expect });
           assert.deepEqual(errors, []);
           reports.push({ serial: "passed", expanded });
           continue;
         }
-        if (process.env.NEXSSH_IMMERSIVE === "1") {
+        if (process.env.VEXSSH_IMMERSIVE === "1") {
           const { exerciseImmersive } = await import("./desktop-immersive.mjs");
           reports.push({immersive:await exerciseImmersive({page, expect, fixture})});
           assert.deepEqual(errors, []);
           assert.deepEqual(consoleErrors, []);
           continue;
         }
-        if (process.env.NEXSSH_WINDOW_SCROLL === "1") {
+        if (process.env.VEXSSH_WINDOW_SCROLL === "1") {
           const { exerciseWindowScroll } = await import("./desktop-window-scroll.mjs");
           reports.push({windowScroll:await exerciseWindowScroll({page, expect,nav}), errors});
           assert.deepEqual(errors, []);
           continue;
         }
-        if (process.env.NEXSSH_MIXED_VIEWS === "1") {
+        if (process.env.VEXSSH_MIXED_VIEWS === "1") {
           const { exerciseMixedViews } = await import("./desktop-mixed-views.mjs");
           await exerciseMixedViews({ page, expect, fixture, nav });
           assert.deepEqual(errors, []);
@@ -479,13 +479,13 @@ try {
         let filesDrag;
         let sessionNavigation;
         let remoteDrawer;
-        if (process.env.NEXSSH_SESSION_TARGETS === "1") {
+        if (process.env.VEXSSH_SESSION_TARGETS === "1") {
           const { exerciseSessionTargets } = await import("./desktop-session-targets.mjs");
           await exerciseSessionTargets({ page, expect, nav, fixture });
           assert.deepEqual(errors, []);
           assert.deepEqual(consoleErrors, []);
         }
-        if (process.env.NEXSSH_THEME_MODES === "1") {
+        if (process.env.VEXSSH_THEME_MODES === "1") {
           await nav("Terminal").click();
           const pane = page.locator(".terminal-pane.focused:visible");
           const session = await pane.getAttribute("data-session-id");
@@ -500,13 +500,13 @@ try {
             await expect(pane.locator(".xterm-helper-textarea")).toBeFocused();
           }
         }
-        if (process.env.NEXSSH_SFTP_SQL === "1") {
+        if (process.env.VEXSSH_SFTP_SQL === "1") {
           const { exerciseSftpSql } = await import("./desktop-sftp-sql.mjs");
           await exerciseSftpSql({page, expect, nav});
           assert.deepEqual(errors, []);
           assert.deepEqual(consoleErrors, []);
         }
-        if (process.env.NEXSSH_DATABASES === "1") {
+        if (process.env.VEXSSH_DATABASES === "1") {
           const { exerciseDatabases } = await import("./desktop-databases.mjs");
           await exerciseDatabases({page, expect, nav, paletteAction});
           assert.deepEqual(errors, []);
@@ -514,72 +514,72 @@ try {
         }
         let drawerResize;
         let drawerDownload;
-        if (process.env.NEXSSH_DRAWER_DOWNLOAD === "1") {
+        if (process.env.VEXSSH_DRAWER_DOWNLOAD === "1") {
           const { exerciseDrawerDownload } = await import("./desktop-drawer-download.mjs");
           drawerDownload = await exerciseDrawerDownload({page, expect, fixture});
           assert.deepEqual(errors, []);
           assert.deepEqual(consoleErrors, []);
         }
-        if (process.env.NEXSSH_DRAWER_RESIZE === "1") {
+        if (process.env.VEXSSH_DRAWER_RESIZE === "1") {
           drawerResize = await exerciseDrawerResize({page, expect});
           assert.deepEqual(errors, []);
           assert.deepEqual(consoleErrors, []);
         }
         let pathLinks;
         let relativeLinks;
-        if (process.env.NEXSSH_RELATIVE_PATHS === "1") {
+        if (process.env.VEXSSH_RELATIVE_PATHS === "1") {
           relativeLinks = await exerciseRelativeLinks({page,expect,fixture});
           assert.deepEqual(errors, []);
           assert.deepEqual(consoleErrors, []);
         }
-        if (process.env.NEXSSH_PATH_LINKS === "1") {
+        if (process.env.VEXSSH_PATH_LINKS === "1") {
           pathLinks = await exercisePathLinks({page,expect,fixture});
           assert.deepEqual(errors, []);
           assert.deepEqual(consoleErrors, []);
         }
         let shellFiles;
-        if (process.env.NEXSSH_SHELL_FILES === "1") {
+        if (process.env.VEXSSH_SHELL_FILES === "1") {
           shellFiles = await exerciseShellFiles({ page, expect, fixture });
           assert.deepEqual(errors, []);
           assert.deepEqual(consoleErrors, []);
         }
-        if (process.env.NEXSSH_REMOTE_DRAWER === "1") {
+        if (process.env.VEXSSH_REMOTE_DRAWER === "1") {
           remoteDrawer = await exerciseRemoteDrawer({ page, expect, fixture });
           assert.deepEqual(errors, []);
           assert.deepEqual(consoleErrors, []);
         }
         let sessionHistory;
-        if (process.env.NEXSSH_SESSION_HISTORY === "1") {
+        if (process.env.VEXSSH_SESSION_HISTORY === "1") {
           sessionHistory = await exerciseSessionHistory({ page, expect, fixture });
           assert.deepEqual(errors, []);
           assert.deepEqual(consoleErrors, []);
         }
-        if (process.env.NEXSSH_SESSION_NAVIGATION === "1") {
+        if (process.env.VEXSSH_SESSION_NAVIGATION === "1") {
           sessionNavigation = await exerciseSessionNavigation({ page, expect, fixture, nav });
           assert.deepEqual(errors, []);
           assert.deepEqual(consoleErrors, []);
         }
-        if (process.env.NEXSSH_REMOTE_TERMINAL === "1") {
+        if (process.env.VEXSSH_REMOTE_TERMINAL === "1") {
           remoteTerminal = await exerciseRemoteTerminalActions({ page, expect, fixture, nav });
           assert.deepEqual(errors, []);
           assert.deepEqual(consoleErrors, []);
         }
-        if (process.env.NEXSSH_TERMINAL_CLIPBOARD === "1") {
+        if (process.env.VEXSSH_TERMINAL_CLIPBOARD === "1") {
           terminalClipboard = await exerciseTerminalClipboard({ page, expect, fixture, paletteAction });
           assert.deepEqual(errors, []);
           assert.deepEqual(consoleErrors, []);
         }
-        if (process.env.NEXSSH_FILES_DRAG === "1") {
+        if (process.env.VEXSSH_FILES_DRAG === "1") {
           filesDrag = await exerciseFilesDrag({ page, expect });
           assert.deepEqual(errors, []);
           assert.deepEqual(consoleErrors, []);
         }
-        if (process.env.NEXSSH_ENHANCEMENTS === "1") {
+        if (process.env.VEXSSH_ENHANCEMENTS === "1") {
           enhancements = await exerciseEnhancements({ page, expect, fixture, paletteAction });
           assert.deepEqual(errors, []);
           assert.deepEqual(consoleErrors, []);
         }
-        if (process.env.NEXSSH_REORDER_TABS === "1") {
+        if (process.env.VEXSSH_REORDER_TABS === "1") {
           tabReordering = await exerciseTabReordering({
             page,
             expect,
@@ -589,12 +589,12 @@ try {
           assert.deepEqual(errors, []);
           assert.deepEqual(consoleErrors, []);
         }
-        if (process.env.NEXSSH_TERMINAL_RETRY === "1") {
+        if (process.env.VEXSSH_TERMINAL_RETRY === "1") {
           terminalRetry = await exerciseTerminalRetry({ page, expect, fixture, paletteAction });
           assert.equal(consoleErrors.length, 1);
           assert(consoleErrors[0].includes("Injected terminal render failure"));
         }
-        if (process.env.NEXSSH_INJECT_RENDER_ERROR === "1") {
+        if (process.env.VEXSSH_INJECT_RENDER_ERROR === "1") {
           await nav("Snippets").click();
           await page
             .getByRole("button", { name: "Review & run", exact: true })
@@ -637,7 +637,7 @@ try {
             name: "Restore workspace",
             exact: true,
           });
-          if (process.env.NEXSSH_RECOVERY_CAPTURE) {
+          if (process.env.VEXSSH_RECOVERY_CAPTURE) {
             await page.setViewportSize({ width: 760, height: 560 });
             for (const theme of ["dark", "light"]) {
               await page.evaluate((theme) => {
@@ -659,7 +659,7 @@ try {
               );
               await page.screenshot({
                 path: resolve(
-                  process.env.NEXSSH_RECOVERY_CAPTURE,
+                  process.env.VEXSSH_RECOVERY_CAPTURE,
                   `workspace-recovery-${theme}.png`,
                 ),
               });
@@ -715,21 +715,21 @@ try {
         }
         assert.deepEqual(errors, []);
         let hostCards;
-        if (process.env.NEXSSH_HOST_CARDS === "1") {
+        if (process.env.VEXSSH_HOST_CARDS === "1") {
           const { exerciseHostCards } = await import("./desktop-host-cards.mjs");
-          hostCards = await exerciseHostCards({ page, expect, fixture, nav, directory:process.env.NEXSSH_HOST_CAPTURE });
+          hostCards = await exerciseHostCards({ page, expect, fixture, nav, directory:process.env.VEXSSH_HOST_CAPTURE });
           assert.deepEqual(errors, []);
           assert.deepEqual(consoleErrors, []);
         }
         let namedLayouts;
-        if (process.env.NEXSSH_NAMED_LAYOUTS === "1") {
+        if (process.env.VEXSSH_NAMED_LAYOUTS === "1") {
           const { exerciseNamedLayouts } = await import("./desktop-named-layouts.mjs");
           namedLayouts = await exerciseNamedLayouts({ page, expect, fixture, nav });
           assert.deepEqual(errors, []);
           assert.deepEqual(consoleErrors, []);
         }
         let sidebarNavigation;
-        if (process.env.NEXSSH_SIDEBAR_NAVIGATION === "1") {
+        if (process.env.VEXSSH_SIDEBAR_NAVIGATION === "1") {
           const { exerciseSidebarNavigation } = await import("./desktop-sidebar-navigation.mjs");
           sidebarNavigation = await exerciseSidebarNavigation({ page, expect, nav });
           assert.deepEqual(errors, []);

@@ -1125,7 +1125,7 @@ mod tests {
     }
     #[test]
     fn collects_nested_folders_and_empty_files() {
-        let folder = std::env::temp_dir().join(format!("nexssh-transfer-{}", uuid::Uuid::new_v4()));
+        let folder = std::env::temp_dir().join(format!("vexssh-transfer-{}", uuid::Uuid::new_v4()));
         fs::create_dir_all(folder.join("nested")).unwrap();
         fs::write(folder.join("nested/data.txt"), b"contents").unwrap();
         fs::write(folder.join("empty"), b"").unwrap();
@@ -1160,7 +1160,7 @@ mod tests {
     }
     #[test]
     fn directory_creation_refuses_existing_files() {
-        let file = std::env::temp_dir().join(format!("nexssh-existing-{}", uuid::Uuid::new_v4()));
+        let file = std::env::temp_dir().join(format!("vexssh-existing-{}", uuid::Uuid::new_v4()));
         fs::write(&file, b"keep").unwrap();
         assert!(local_directory(&file).is_err());
         assert_eq!(fs::read(&file).unwrap(), b"keep");
@@ -1169,7 +1169,7 @@ mod tests {
     #[test]
     fn publishing_download_never_overwrites_a_concurrent_destination() {
         let directory =
-            std::env::temp_dir().join(format!("nexssh-publish-{}", uuid::Uuid::new_v4()));
+            std::env::temp_dir().join(format!("vexssh-publish-{}", uuid::Uuid::new_v4()));
         fs::create_dir(&directory).unwrap();
         let temporary = directory.join("download.part");
         let destination = directory.join("download.txt");
@@ -1185,12 +1185,12 @@ mod tests {
         fs::remove_dir_all(directory).unwrap();
     }
     #[test]
-    #[ignore = "Requires NEXSSH_TEST_CONNECTION pointing to an isolated loopback SSH fixture"]
+    #[ignore = "Requires VEXSSH_TEST_CONNECTION pointing to an isolated loopback SSH fixture"]
     fn live_sftp_scp_round_trip_and_editor_atomic_write() {
         use base64::Engine;
         use sha2::{Digest, Sha256};
         let fixture_path =
-            std::env::var("NEXSSH_TEST_CONNECTION").expect("NEXSSH_TEST_CONNECTION is required");
+            std::env::var("VEXSSH_TEST_CONNECTION").expect("VEXSSH_TEST_CONNECTION is required");
         let fixture: Value = serde_json::from_slice(&fs::read(fixture_path).unwrap()).unwrap();
         let hostname = fixture["hostname"].as_str().unwrap();
         assert_eq!(
@@ -1219,8 +1219,8 @@ mod tests {
         let sftp = session.sftp().unwrap();
         assert!(files::remote_bytes(&sftp, Path::new("/hello.txt"))
             .unwrap()
-            .starts_with(b"NEXSSH"));
-        let directory = format!("/nexssh-files-test-{}", uuid::Uuid::new_v4());
+            .starts_with(b"VEXSSH"));
+        let directory = format!("/vexssh-files-test-{}", uuid::Uuid::new_v4());
         remote_directory(&sftp, Path::new(&directory), 0o700).unwrap();
         let path = files::remote_join(&directory, "quoted ' name $value;sample.txt").unwrap();
         let content = b"actual SCP and SFTP transfer\n";

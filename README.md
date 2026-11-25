@@ -1,6 +1,6 @@
-# NEXSSH
+# VEXSSH
 
-NEXSSH is a Windows desktop app for SSH, remote file transfers, serial consoles, and database connections.
+VEXSSH is a Windows desktop app for SSH, remote file transfers, serial consoles, and database connections.
 
 It keeps a shell and the files you’re working on in the same window. Open a saved host, switch to SFTP to move or edit a file, and switch back to the same shell.
 
@@ -13,11 +13,15 @@ It keeps a shell and the files you’re working on in the same window. Open a sa
 
 ## Download
 
-Get the Windows x64 installer or portable executable from [GitHub Releases](https://github.com/FishyBite/NEXSSH/releases).
+Get the Windows x64 installer or portable executable from [GitHub Releases](../../releases).
+
+## Upgrading from NEXSSH RC7
+
+Close RC7 before running VEXSSH Setup under the same Windows account. Setup updates the existing installation in place. VEXSSH uses the existing host profiles, vault, and workspace settings. The installed executable keeps its original filename so existing taskbar pins can still launch it.
 
 ## Run on Windows
 
-NEXSSH uses Microsoft Edge WebView2. The Windows x64 installer can download the runtime when needed. The portable executable requires WebView2 to be installed already.
+VEXSSH uses Microsoft Edge WebView2. The Windows x64 installer can download the runtime when needed. The portable executable requires WebView2 to be installed already.
 
 For a first SSH session, open **Hosts**, add your server, and verify its fingerprint when prompted. Use **Terminal** and **SFTP** in the session bar to switch between the shell and files.
 
@@ -37,6 +41,6 @@ npm test
 npm run tauri -- build --no-bundle
 ```
 
-The executable is written to `src-tauri/target/release/nexssh.exe`. The frontend uses React and TypeScript. Tauri and Rust handle the desktop app, and a Go helper provides database drivers.
+The executable is written to `src-tauri/target/release/vexssh.exe`. The frontend uses React and TypeScript. Tauri and Rust handle the desktop app, and a Go helper provides database drivers.
 
 

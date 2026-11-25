@@ -11,7 +11,7 @@ import asyncssh
 
 
 async def main(binary):
-    with tempfile.TemporaryDirectory(prefix="nexssh-sftp-test-") as directory:
+    with tempfile.TemporaryDirectory(prefix="vexssh-sftp-test-") as directory:
         root = Path(directory)
         files = root / "remote"
         files.mkdir()
@@ -43,7 +43,7 @@ async def main(binary):
             process = await asyncio.create_subprocess_exec(
                 binary, "transfers::integration::transport_disconnect_resume_and_conflict_policies",
                 "--exact", "--ignored", "--nocapture",
-                env={**os.environ, "NEXSSH_TEST_CONNECTION": str(connection)},
+                env={**os.environ, "VEXSSH_TEST_CONNECTION": str(connection)},
             )
             return await process.wait()
 

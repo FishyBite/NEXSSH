@@ -738,20 +738,20 @@ mod live_tests {
         stream
             .set_read_timeout(Some(Duration::from_secs(10)))
             .unwrap();
-        stream.write_all(b"nexssh-forwarding-test").unwrap();
+        stream.write_all(b"vexssh-forwarding-test").unwrap();
         let mut response = [0; 22];
         stream.read_exact(&mut response).unwrap();
-        assert_eq!(&response, b"nexssh-forwarding-test");
+        assert_eq!(&response, b"vexssh-forwarding-test");
     }
 
     #[test]
     #[ignore = "Requires explicitly approved real SSH host configuration"]
     fn approved_real_host_file_key_shell() {
-        let path = std::env::var("NEXSSH_REAL_HOST_TEST_CONFIG")
-            .expect("Set NEXSSH_REAL_HOST_TEST_CONFIG to the approved host JSON");
+        let path = std::env::var("VEXSSH_REAL_HOST_TEST_CONFIG")
+            .expect("Set VEXSSH_REAL_HOST_TEST_CONFIG to the approved host JSON");
         let fixture: Value = serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
         let directory =
-            std::env::temp_dir().join(format!("nexssh-approved-host-{}", uuid::Uuid::new_v4()));
+            std::env::temp_dir().join(format!("vexssh-approved-host-{}", uuid::Uuid::new_v4()));
         let state = AppState::new(directory.clone()).unwrap();
         let mut host = fixture.clone();
         host["id"] = json!("approved-real-host");
@@ -821,13 +821,13 @@ mod live_tests {
     }
 
     #[test]
-    #[ignore = "Requires loopback SSH fixture configured by NEXSSH_TEST_CONNECTION"]
+    #[ignore = "Requires loopback SSH fixture configured by VEXSSH_TEST_CONNECTION"]
     fn live_encrypted_file_identity_and_probe() {
-        let path = std::env::var("NEXSSH_TEST_CONNECTION").unwrap();
+        let path = std::env::var("VEXSSH_TEST_CONNECTION").unwrap();
         let fixture: Value = serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
         assert_eq!(fixture["hostname"], "127.0.0.1");
         let directory =
-            std::env::temp_dir().join(format!("nexssh-file-key-{}", uuid::Uuid::new_v4()));
+            std::env::temp_dir().join(format!("vexssh-file-key-{}", uuid::Uuid::new_v4()));
         let state = AppState::new(directory.clone()).unwrap();
         let mut host = fixture.clone();
         host["id"] = json!("file-key");
@@ -950,17 +950,17 @@ mod live_tests {
     }
 
     #[test]
-    #[ignore = "Requires loopback SSH fixture configured by NEXSSH_TEST_CONNECTION"]
+    #[ignore = "Requires loopback SSH fixture configured by VEXSSH_TEST_CONNECTION"]
     fn live_auth_tunnels_and_backup() {
-        let fixture_path = std::env::var("NEXSSH_TEST_CONNECTION")
-            .expect("Set NEXSSH_TEST_CONNECTION to the fixture JSON path");
+        let fixture_path = std::env::var("VEXSSH_TEST_CONNECTION")
+            .expect("Set VEXSSH_TEST_CONNECTION to the fixture JSON path");
         let fixture: Value =
             serde_json::from_slice(&std::fs::read(&fixture_path).unwrap()).unwrap();
         assert_eq!(
             fixture["hostname"], "127.0.0.1",
             "Integration tests require an isolated loopback fixture"
         );
-        let directory = std::env::temp_dir().join(format!("nexssh-live-{}", uuid::Uuid::new_v4()));
+        let directory = std::env::temp_dir().join(format!("vexssh-live-{}", uuid::Uuid::new_v4()));
         let state = AppState::new(directory.clone()).unwrap();
         let mut host = fixture.clone();
         host["id"] = json!("password-host");

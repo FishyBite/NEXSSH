@@ -34,20 +34,20 @@ export function UpdatesPanel() {
   };
   const choose = async () => {
     try {
-      const path = await open({ multiple: false, title: "Choose NEXSSH update package", filters: [{ name: "NEXSSH update package", extensions: ["zip"] }] });
+      const path = await open({ multiple: false, title: "Choose VEXSSH update package", filters: [{ name: "VEXSSH update package", extensions: ["zip"] }] });
       if (typeof path === "string") await run("updates_prepare", { path });
     } catch (error) { setError(message(error)); }
   };
   const resultMessages: Record<string, string> = {
-    installed: `Updated to NEXSSH ${status?.lastResult?.version || version}.`,
+    installed: `Updated to VEXSSH ${status?.lastResult?.version || version}.`,
     update_start_failed: "The update could not start. Your existing installation remains available. Choose the package again to retry.",
     installation_failed: "The update could not be installed. Choose the package again to retry.",
-    rollback_failed: "The update could not be restored automatically. Reinstall NEXSSH before retrying the update.",
-    restart_failed: "The update was installed. Open NEXSSH again from your taskbar.",
+    rollback_failed: "The update could not be restored automatically. Reinstall VEXSSH before retrying the update.",
+    restart_failed: "The update was installed. Open VEXSSH again from your taskbar.",
   };
   return <div className="updates-panel">
-    <p>NEXSSH {status?.currentVersion || version}</p>
-    <p>Choose a NEXSSH update package from this device. Updates are installed after you close the app and keep your existing taskbar launcher.</p>
+    <p>VEXSSH {status?.currentVersion || version}</p>
+    <p>Choose a VEXSSH update package from this device. Updates are installed after you close the app and keep your existing taskbar launcher.</p>
     <div className="toolbar">
       <Button busy={busy} onClick={() => void choose()}><PackageOpen size={16} />Choose update package</Button>
       <Button disabled={busy} onClick={() => void run("updates_status")}><RefreshCw size={15} />Refresh status</Button>
@@ -56,14 +56,14 @@ export function UpdatesPanel() {
     <ErrorBox error={status?.pendingError || ""} />
     {status?.canCancel && !status.pending && <Button disabled={busy} onClick={() => void run("updates_cancel")}>Clear pending update</Button>}
     {status?.pending && <div className="update-summary" role="status">
-      <strong>NEXSSH {status.pending.version} is ready</strong>
+      <strong>VEXSSH {status.pending.version} is ready</strong>
       <span className="update-state ready"><CheckCircle2 size={16} />Verified package · {formatBytes(status.pending.size)}</span>
       {status.pending.installOnExit
-        ? <p>This update will install when you close NEXSSH. Finish your SSH work and save any file edits before closing.</p>
+        ? <p>This update will install when you close VEXSSH. Finish your SSH work and save any file edits before closing.</p>
         : <p>Your current sessions keep running until you choose to close the app.</p>}
-      {!status.canInstall && <p>Open the installed NEXSSH application to schedule this update.</p>}
+      {!status.canInstall && <p>Open the installed VEXSSH application to schedule this update.</p>}
       <div className="toolbar">
-        {!status.pending.installOnExit && <Button variant="primary" disabled={busy || !status.canInstall} onClick={() => void run("updates_install_on_exit")}>Install when NEXSSH closes</Button>}
+        {!status.pending.installOnExit && <Button variant="primary" disabled={busy || !status.canInstall} onClick={() => void run("updates_install_on_exit")}>Install when VEXSSH closes</Button>}
         <Button disabled={busy} onClick={() => void run("updates_cancel")}>{status.pending.installOnExit ? "Cancel scheduled update" : "Remove package"}</Button>
       </div>
     </div>}

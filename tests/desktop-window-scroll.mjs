@@ -42,8 +42,8 @@ export async function exerciseWindowScroll({page, expect, nav}) {
     await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     await page.evaluate(() => window.scrollTo(0, document.scrollingElement.scrollHeight));
     await checkChrome();
-    if (width === 1536 && process.env.NEXSSH_SCROLL_CAPTURE)
-      await page.screenshot({path:process.env.NEXSSH_SCROLL_CAPTURE,animations:"disabled"});
+    if (width === 1536 && process.env.VEXSSH_SCROLL_CAPTURE)
+      await page.screenshot({path:process.env.VEXSSH_SCROLL_CAPTURE,animations:"disabled"});
     const atBottom = await main.evaluate(el => el.scrollTop);
     const navBounds = await rail.boundingBox();
     await page.mouse.move(navBounds.x+navBounds.width/2,navBounds.y+navBounds.height/2);

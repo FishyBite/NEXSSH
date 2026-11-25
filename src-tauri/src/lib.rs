@@ -112,7 +112,7 @@ async fn request(
 
 fn startup_error(app: &tauri::AppHandle, message: String) {
     let exit = app.clone();
-    app.dialog().message(message).title("NEXSSH could not open")
+    app.dialog().message(message).title("VEXSSH could not open")
         .kind(MessageDialogKind::Error).show(move |_| exit.exit(1));
 }
 
@@ -129,7 +129,8 @@ pub fn run() {
             let state = app.path().app_data_dir().map_err(|error| error.to_string())
                 .and_then(|directory| {
                     #[cfg(debug_assertions)]
-                    let directory = std::env::var_os("NEXSSH_TEST_DATA_DIR")
+                    let directory = std::env::var_os("VEXSSH_TEST_DATA_DIR")
+                        .or_else(|| std::env::var_os("NEXSSH_TEST_DATA_DIR"))
                         .map(std::path::PathBuf::from)
                         .unwrap_or(directory);
                     AppState::new(directory)
@@ -150,7 +151,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![request])
         .build(tauri::generate_context!())
-        .expect("Unable to initialize NEXSSH")
+        .expect("Unable to initialize VEXSSH")
         .run(|app, event| {
             if matches!(event, tauri::RunEvent::Exit) {
                 app.state::<serial::SerialSessions>().close_all();

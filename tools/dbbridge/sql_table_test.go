@@ -28,7 +28,7 @@ func TestCompiledRead(t *testing.T) {
 	}
 }
 func TestTableLive(t *testing.T) {
-	config := os.Getenv("NEXSSH_TABLE_TEST_PROFILE")
+	config := os.Getenv("VEXSSH_TABLE_TEST_PROFILE")
 	if config == "" {
 		t.Skip("local disposable server required")
 	}
@@ -37,7 +37,7 @@ func TestTableLive(t *testing.T) {
 		t.Fatal(e)
 	}
 	var p Profile
-	if e = json.Unmarshal(b, &p); e != nil || p.Host != "127.0.0.1" || p.Database != "nexssh_grid_test" {
+	if e = json.Unmarshal(b, &p); e != nil || p.Host != "127.0.0.1" || p.Database != "vexssh_grid_test" {
 		t.Fatal("refusing non-fixture profile")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)

@@ -137,12 +137,12 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Requires isolated loopback NEXSSH_TEST_CONNECTION fixture"]
+    #[ignore = "Requires isolated loopback VEXSSH_TEST_CONNECTION fixture"]
     fn verified_ssh_compares_actual_bytes_and_rejects_changed_route() {
         use std::io::Write;
-        let fixture: Value = serde_json::from_slice(&fs::read(std::env::var("NEXSSH_TEST_CONNECTION").unwrap()).unwrap()).unwrap();
+        let fixture: Value = serde_json::from_slice(&fs::read(std::env::var("VEXSSH_TEST_CONNECTION").unwrap()).unwrap()).unwrap();
         assert_eq!(fixture["hostname"], "127.0.0.1");
-        let root = std::env::temp_dir().join(format!("nexssh-checksum-{}", uuid::Uuid::new_v4()));
+        let root = std::env::temp_dir().join(format!("vexssh-checksum-{}", uuid::Uuid::new_v4()));
         let state = AppState::new(root.clone()).unwrap();
         let mut config = json!({"hosts":[{"id":"loop","hostname":"127.0.0.1","port":fixture["port"],"username":fixture["username"],"authMethod":"password"}]});
         state.save_config(config.clone()).unwrap();

@@ -224,7 +224,7 @@ export async function exerciseTabReordering({ page, expect, fixture, paletteActi
   await expect.poll(selected).toBe(initial[2]);
   await unchangedConnections();
 
-  const captureDirectory = resolve(process.env.NEXSSH_TAB_CAPTURE || fileURLToPath(new URL("../../../work/", import.meta.url)));
+  const captureDirectory = resolve(process.env.VEXSSH_TAB_CAPTURE || fileURLToPath(new URL("../../../work/", import.meta.url)));
   await mkdir(captureDirectory, { recursive: true });
   await page.setViewportSize({ width: 760, height: 560 });
   async function expectTheme(theme) {

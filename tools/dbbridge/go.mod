@@ -1,4 +1,4 @@
-module nexssh.local/dbbridge
+module vexssh.local/dbbridge
 
 go 1.26.0
 

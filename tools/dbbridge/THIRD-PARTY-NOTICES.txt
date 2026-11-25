@@ -1,4 +1,4 @@
-NEXSSH database driver notices
+VEXSSH database driver notices
 
 The unmodified MySQL driver source covered by the Mozilla Public License 2.0 is
 available at https://github.com/go-sql-driver/mysql/tree/v1.10.2 .

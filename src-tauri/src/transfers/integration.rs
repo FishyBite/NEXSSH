@@ -1,4 +1,4 @@
-#![allow(unexpected_cfgs)] // nexssh_queue_fixture opts into the Windows manifest-equipped harness.
+#![allow(unexpected_cfgs)] // vexssh_queue_fixture opts into the Windows manifest-equipped harness.
 use super::*;
 use base64::Engine;
 use std::net::TcpStream;
@@ -44,13 +44,13 @@ fn progress<'a>(state: &'a AppState, t: &'a mut Transfer, cancel: &'a AtomicBool
 }
 
 #[test]
-#[ignore = "Requires NEXSSH_TEST_CONNECTION pointing at an isolated loopback SSH fixture"]
+#[ignore = "Requires VEXSSH_TEST_CONNECTION pointing at an isolated loopback SSH fixture"]
 fn transport_disconnect_resume_and_conflict_policies() {
     let fixture: Value = serde_json::from_slice(
-        &fs::read(std::env::var("NEXSSH_TEST_CONNECTION").unwrap()).unwrap(),
+        &fs::read(std::env::var("VEXSSH_TEST_CONNECTION").unwrap()).unwrap(),
     )
     .unwrap();
-    let root = std::env::temp_dir().join(format!("nexssh-resume-test-{}", uuid::Uuid::new_v4()));
+    let root = std::env::temp_dir().join(format!("vexssh-resume-test-{}", uuid::Uuid::new_v4()));
     let state = AppState::new(root.join("state")).unwrap();
     state.db().unwrap().execute_batch("CREATE TABLE nexssh_transfers(id TEXT PRIMARY KEY,record TEXT,updated_at INTEGER);CREATE TABLE transfer_conflict_policies(batch TEXT PRIMARY KEY,policy TEXT);").unwrap();
     let (control, _) = connection(&fixture);
@@ -288,14 +288,14 @@ fn transport_disconnect_resume_and_conflict_policies() {
         queue().0.lock().unwrap().jobs.remove(&id);
         sftp.unlink(Path::new(&remote)).unwrap();
     }
-    #[cfg(nexssh_queue_fixture)]
+    #[cfg(vexssh_queue_fixture)]
     exercise_queue(&fixture, &state, &root, &remote_root, &control_sftp);
     control_sftp.rmdir(Path::new(&remote_root)).unwrap();
     drop(state);
     fs::remove_dir_all(root).unwrap();
 }
 
-#[cfg(nexssh_queue_fixture)]
+#[cfg(vexssh_queue_fixture)]
 fn await_status(state: &AppState, id: &str, status: &str) -> Transfer {
     for _ in 0..600 {
         let t = get_transfer(state, id).unwrap();
@@ -308,7 +308,7 @@ fn await_status(state: &AppState, id: &str, status: &str) -> Transfer {
     panic!("Transfer did not reach {status}");
 }
 
-#[cfg(nexssh_queue_fixture)]
+#[cfg(vexssh_queue_fixture)]
 fn exercise_queue(fixture: &Value, state: &AppState, root: &Path, remote: &str, sftp: &Sftp) {
     // Build a windowless event target so the production start/resolve/retry dispatchers
     // can run on a real loopback connection without opening a desktop session.

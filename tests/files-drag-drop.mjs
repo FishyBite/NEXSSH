@@ -86,7 +86,7 @@ const styles = [
   ...compiled.outputFiles.filter(file => file.path.endsWith(".css")).map(file => file.text),
 ];
 const script = compiled.outputFiles.find(file => file.path.endsWith(".js")).text;
-const server = createServer((_request, response) => response.end('<!doctype html><html lang="en"><head><title>NEXSSH file drag fixture</title></head><body><main id="root" style="overflow:auto"></main></body></html>'));
+const server = createServer((_request, response) => response.end('<!doctype html><html lang="en"><head><title>VEXSSH file drag fixture</title></head><body><main id="root" style="overflow:auto"></main></body></html>'));
 await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
 const browser = await chromium.launch({ channel: "msedge", headless: true });
 const reports = [];
@@ -149,7 +149,7 @@ async function nativeDrop(page, point, paths = ["C:/Explorer/report.txt"]) {
   await page.evaluate(({ point, paths }) => window.fixture.emitNative("drop", { x: point.x * window.fixture.scale, y: point.y * window.fixture.scale }, paths), { point, paths });
 }
 async function run(name, exercise, options = {}) {
-  if (process.env.NEXSSH_FILES_DRAG_FILTER && !new RegExp(process.env.NEXSSH_FILES_DRAG_FILTER).test(name)) return;
+  if (process.env.VEXSSH_FILES_DRAG_FILTER && !new RegExp(process.env.VEXSSH_FILES_DRAG_FILTER).test(name)) return;
   const page = await browser.newPage({ viewport: { width: 1400, height: 1000 }, ...options });
   const errors = [];
   page.on("pageerror", error => errors.push(error.message));

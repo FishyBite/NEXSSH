@@ -99,7 +99,7 @@ func TestSQLForwardedTLSVerifiesOriginalHostname(t *testing.T) {
 			}()
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
-			p := Profile{Engine: engine, Host: "database.internal.invalid", Username: "nexssh", Password: "test:#/@!", Database: "demo", Port: 1521, TLS: true, ForwardPort: l.Addr().(*net.TCPAddr).Port}
+			p := Profile{Engine: engine, Host: "database.internal.invalid", Username: "vexssh", Password: "test:#/@!", Database: "demo", Port: 1521, TLS: true, ForwardPort: l.Addr().(*net.TCPAddr).Port}
 			db, err := openSQL(ctx, p)
 			if err == nil {
 				db.Close()
@@ -164,10 +164,10 @@ func TestSQLCell(t *testing.T) {
 	}
 }
 
-// NEXSSH_TEST_PG_PORT is supplied only by a disposable, unauthenticated
+// VEXSSH_TEST_PG_PORT is supplied only by a disposable, unauthenticated
 // PostgreSQL instance on loopback. No real profiles are needed for this test.
 func TestLoopbackPostgreSQL(t *testing.T) {
-	portValue := os.Getenv("NEXSSH_TEST_PG_PORT")
+	portValue := os.Getenv("VEXSSH_TEST_PG_PORT")
 	if portValue == "" {
 		t.Skip("requires local PostgreSQL fixture")
 	}
@@ -229,7 +229,7 @@ func TestLoopbackPostgreSQL(t *testing.T) {
 	// Emulate the socket endpoint exposed by a local SSH forward. The
 	// original hostname is deliberately unresolvable on the client.
 	p.ForwardPort = port
-	p.Host = "private-db.nexssh.invalid"
+	p.Host = "private-db.vexssh.invalid"
 	p.Port = 5432
 	forwarded, err := openSQL(ctx, p)
 	if err != nil {

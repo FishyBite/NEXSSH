@@ -1,4 +1,4 @@
-// NEXSSH starts one driver process per connection. Requests and responses use
+// VEXSSH starts one driver process per connection. Requests and responses use
 // private stdio pipes; neither credentials nor query text are command-line arguments.
 package main
 

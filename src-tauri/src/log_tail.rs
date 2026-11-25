@@ -129,15 +129,15 @@ pub fn dispatch(state: &AppState, action: &str, payload: &Value) -> Result<Value
 mod tests {
     use super::*;
     #[test]
-    #[ignore = "Requires the local NEXSSH_NINE_FIXTURE SSH service"]
+    #[ignore = "Requires the local VEXSSH_NINE_FIXTURE SSH service"]
     fn real_pty_directory_and_incremental_sftp_log() {
         use crate::storage::TerminalSession;
         use std::io::Write;
         let fixture: Value = serde_json::from_slice(
-            &std::fs::read(std::env::var("NEXSSH_NINE_FIXTURE").unwrap()).unwrap(),
+            &std::fs::read(std::env::var("VEXSSH_NINE_FIXTURE").unwrap()).unwrap(),
         )
         .unwrap();
-        let db = std::env::temp_dir().join(format!("nexssh-tail-{}", uuid::Uuid::new_v4()));
+        let db = std::env::temp_dir().join(format!("vexssh-tail-{}", uuid::Uuid::new_v4()));
         let state = AppState::new(db.clone()).unwrap();
         let port = fixture["port"].as_u64().unwrap() as u16;
         state.save_config(json!({"hosts":[{"id":"a","hostname":"127.0.0.1","port":port,"username":"fixture","authMethod":"password"}]})).unwrap();

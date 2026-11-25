@@ -1,21 +1,8 @@
-# NEXSSH identity
+# VEXSSH identity
 
-The app mark pairs a terminal prompt with a cursor. The prompt identifies the SSH workspace immediately; the cursor also gives the mark a clear baseline at small Windows icon sizes. It is drawn as vector geometry rather than a font character or a library icon.
+The mark pairs the initial V with a pale terminal cursor. The cursor follows the slope of the V and shares its baseline. The blue tile uses a single color so both shapes stay legible in a taskbar or a collapsed sidebar.
 
-The blue tile continues the product's existing blue accent. Its restrained change in brightness gives the standalone Windows icon depth; the pale blue cursor stays distinct from the white prompt. The rounded outer tile defines the icon boundary against both light and dark desktops. No shadow or animation is required.
-
-The source is `public/nexssh.svg`. The same asset appears in the sidebar and browser favicon. Generate native assets with `npm run tauri -- icon public/nexssh.svg`, then build the release so Windows uses the new embedded icon.
-
-The existing interface direction remains ENERGY 1, RHYTHM 2, MOTION 1. The logo is a static identifier, not an additional control. Its 32 by 32 pixel sidebar footprint preserves the terminal layout.
-
-## Logo delivery checks
-
-- Hard gate PASS: the asset was explicitly requested, contains no claims or text, reserves 32 by 32 pixels in the sidebar, and introduces no controls or animation. Headless checks at widths 1440 and 760 found no overflow or page errors in either theme.
-- Purpose gate PASS: the prompt identifies a terminal app, the cursor establishes a baseline, and the blue tile continues the existing accent. The single-color shading defines the standalone Windows icon without affecting the interface background.
-- Liveliness PASS: the prompt and cursor create a recognizable silhouette; the existing direction and deliberate blue accent remain consistent. The mark was inspected at both 256 and 32 pixels.
-- Craftsmanship PASS: the SVG decoded at 256 by 256 and displayed at 32 by 32. Expanded mode uses decorative alt text beside the wordmark; collapsed mode exposes the name NEXSSH. The favicon returned HTTP 200 with image/svg+xml. Native ICO entries are 16, 24, 32, 48, 64, and 256 pixels at 32-bit depth.
-
-These checks apply to the logo change. Broader application verification and its remaining limits are recorded in `VALIDATION.md`.
+The sidebar, recovery view and favicon use `public/vexssh.svg`. To regenerate the Windows icons, run `npm run tauri -- icon public/vexssh.svg -o <temporary-directory>` and copy `icon.ico` and `icon.png` into `src-tauri/icons`. The installer uses the same ICO as the application.
 
 ## Tab and titlebar direction, 0.1.5
 

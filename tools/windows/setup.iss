@@ -1,7 +1,7 @@
 ; Offline: ISCC /DWebViewInstaller=<signed x64 Evergreen standalone installer> setup.iss
 ; Online:  ISCC /DOnlineSetup=1 /DWebViewInstaller=<signed Evergreen bootstrapper> setup.iss
 #ifndef AppBinary
-  #define AppBinary SourcePath + "..\..\src-tauri\target\release\nexssh.exe"
+  #define AppBinary SourcePath + "..\..\src-tauri\target\release\vexssh.exe"
 #endif
 #ifndef WebViewInstaller
   #error Supply the path to the Microsoft WebView2 installer matching the build mode.
@@ -11,19 +11,20 @@
   #define RuntimeFile "MicrosoftEdgeWebview2Setup.exe"
   #define SetupSuffix "-Online-Setup"
   #define RuntimeAction "Downloading and installing Microsoft Edge WebView2 Runtime..."
-  #define RetryAdvice "Check your internet connection and run NEXSSH Setup again."
+  #define RetryAdvice "Check your internet connection and run VEXSSH Setup again."
 #else
   #define RuntimeFile "MicrosoftEdgeWebView2RuntimeInstallerX64.exe"
   #define SetupSuffix "-Setup"
   #define RuntimeAction "Installing Microsoft Edge WebView2 Runtime..."
-  #define RetryAdvice "Run NEXSSH Setup again to retry."
+  #define RetryAdvice "Run VEXSSH Setup again to retry."
 #endif
 
 [Setup]
+; RC7 pins and its signed updater launch the existing executable by this path.
 AppId=com.nexssh.desktop
-AppName=NEXSSH
+AppName=VEXSSH
 AppVersion={#AppVersion}
-AppPublisher=NEXSSH
+AppPublisher=VEXSSH
 DefaultDirName={localappdata}\Programs\NEXSSH
 UsePreviousAppDir=no
 DisableDirPage=yes
@@ -34,11 +35,11 @@ ArchitecturesAllowed=x64os
 ArchitecturesInstallIn64BitMode=x64os
 SetupIconFile=..\..\src-tauri\icons\icon.ico
 UninstallDisplayIcon={app}\NEXSSH.exe
-OutputBaseFilename=NEXSSH-{#AppVersion}-Windows-x64{#SetupSuffix}
+OutputBaseFilename=VEXSSH-{#AppVersion}-Windows-x64{#SetupSuffix}
 VersionInfoVersion={#GetVersionNumbersString(AppBinary)}
 VersionInfoTextVersion={#AppVersion}
 VersionInfoProductTextVersion={#AppVersion}
-VersionInfoDescription=NEXSSH Installer
+VersionInfoDescription=VEXSSH Installer
 Compression=lzma2/max
 SolidCompression=no
 CloseApplications=no
@@ -50,12 +51,39 @@ Source: "{#AppBinary}"; DestDir: "{app}"; DestName: "NEXSSH.exe"; Flags: replace
 Source: "..\dbbridge\THIRD-PARTY-NOTICES.txt"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{userdesktop}\NEXSSH"; Filename: "{app}\NEXSSH.exe"; WorkingDir: "{app}"; AppUserModelID: "com.nexssh.desktop"
-Name: "{userprograms}\NEXSSH"; Filename: "{app}\NEXSSH.exe"; WorkingDir: "{app}"; AppUserModelID: "com.nexssh.desktop"
+Name: "{userdesktop}\VEXSSH"; Filename: "{app}\NEXSSH.exe"; WorkingDir: "{app}"; AppUserModelID: "com.nexssh.desktop"
+Name: "{userprograms}\VEXSSH"; Filename: "{app}\NEXSSH.exe"; WorkingDir: "{app}"; AppUserModelID: "com.nexssh.desktop"
 
 [Code]
 const
   RuntimeKey = 'Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}';
+
+procedure RemovePreviousShortcut(const OldLink, NewLink: String);
+var
+  Shell, Link: Variant;
+  Target, Arguments: String;
+begin
+  if not (FileExists(OldLink) and FileExists(NewLink)) then Exit;
+  try
+    Shell := CreateOleObject('WScript.Shell');
+    Link := Shell.CreateShortcut(OldLink);
+    Target := Link.TargetPath;
+    Arguments := Link.Arguments;
+    if (CompareText(Target, ExpandConstant('{app}\NEXSSH.exe')) = 0) and
+       (Arguments = '') then
+      if not DeleteFile(OldLink) then Log('Could not remove previous application shortcut.');
+  except
+    Log('Could not verify previous application shortcut.');
+  end;
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep = ssPostInstall then begin
+    RemovePreviousShortcut(ExpandConstant('{userdesktop}\NEXSSH.lnk'), ExpandConstant('{userdesktop}\VEXSSH.lnk'));
+    RemovePreviousShortcut(ExpandConstant('{userprograms}\NEXSSH.lnk'), ExpandConstant('{userprograms}\VEXSSH.lnk'));
+  end;
+end;
 
 function HasRuntimeAt(Root: Integer): Boolean;
 var
@@ -87,7 +115,7 @@ begin
     Result := 'Could not start the Microsoft WebView2 installer. ' + SysErrorMessage(ExitCode)
   else if (ExitCode = 3010) or (ExitCode = 1641) then begin
     NeedsRestart := True;
-    Result := 'Restart Windows and run NEXSSH Setup again to finish installation.';
+    Result := 'Restart Windows and run VEXSSH Setup again to finish installation.';
   end
   else if not HasRuntime then
     Result := Format('Microsoft Edge WebView2 Runtime is still unavailable (installer code %d). {#RetryAdvice}', [ExitCode]);

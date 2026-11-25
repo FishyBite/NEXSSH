@@ -223,7 +223,7 @@ fn verify_manifest(
     let signature =
         Signature::from_slice(signature).map_err(|_| error("The update signature is invalid"))?;
     key.verify_strict(raw, &signature)
-        .map_err(|_| error("This update was not signed by the NEXSSH release key"))?;
+        .map_err(|_| error("This update was not signed by the VEXSSH release key"))?;
     let manifest: Manifest =
         serde_json::from_slice(raw).map_err(|_| error("The signed update manifest is invalid"))?;
     if manifest.schema != 1
@@ -236,14 +236,14 @@ fn verify_manifest(
         || manifest.version.len() > 64
     {
         return Err(error(
-            "This package is not a supported NEXSSH Windows update",
+            "This package is not a supported VEXSSH Windows update",
         ));
     }
     let version =
         Version::parse(&manifest.version).map_err(|_| error("The update version is invalid"))?;
     let current = Version::parse(current).map_err(|_| error("The installed version is invalid"))?;
     if version <= current || !version.pre.is_empty() || !version.build.is_empty() {
-        return Err(error("Choose a newer stable NEXSSH version"));
+        return Err(error("Choose a newer stable VEXSSH version"));
     }
     Ok(manifest)
 }
@@ -289,7 +289,7 @@ fn read_package(path: &Path, current: &str, key: &VerifyingKey) -> Result<Packag
         },
         file,
     )
-    .map_err(|_| error("Choose a valid NEXSSH update ZIP package"))?;
+    .map_err(|_| error("Choose a valid VEXSSH update ZIP package"))?;
     if archive.len() != 3
         || archive.has_duplicate_names()
         || archive
@@ -519,14 +519,14 @@ fn same_path(left: &Path, right: &Path) -> Result<bool, String> {
 fn require_installed(paths: &Paths) -> Result<(), String> {
     if cfg!(debug_assertions) {
         return Err(error(
-            "Local updates require the installed NEXSSH release build",
+            "Local updates require the installed VEXSSH release build",
         ));
     }
     let executable =
         std::env::current_exe().map_err(|_| error("Unable to identify this application"))?;
     if !same_path(&executable, &paths.install)? {
         return Err(error(
-            "Updates can only be installed from the NEXSSH Start Menu or taskbar application",
+            "Updates can only be installed from the VEXSSH Start Menu or taskbar application",
         ));
     }
     Ok(())
@@ -1074,7 +1074,7 @@ mod tests {
     impl Fixture {
         fn new() -> Self {
             let directory =
-                std::env::temp_dir().join(format!("nexssh-update-tests-{}", uuid::Uuid::new_v4()));
+                std::env::temp_dir().join(format!("vexssh-update-tests-{}", uuid::Uuid::new_v4()));
             fs::create_dir(&directory).unwrap();
             let install_dir = directory.join("installed");
             let data = directory.join("data");
@@ -1162,7 +1162,7 @@ mod tests {
                         .file_name()
                         .unwrap()
                         .to_string_lossy()
-                        .starts_with("nexssh-update-tests-")
+                        .starts_with("vexssh-update-tests-")
             );
             let _ = fs::remove_dir_all(&self.directory);
         }
@@ -1355,14 +1355,14 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Requires NEXSSH_TEST_UPDATE_PACKAGE pointing to a signed release ZIP; verifies only, never installs or launches"]
+    #[ignore = "Requires VEXSSH_TEST_UPDATE_PACKAGE pointing to a signed release ZIP; verifies only, never installs or launches"]
     fn signed_release_package_interoperates_with_packager() {
         let path = PathBuf::from(
-            std::env::var_os("NEXSSH_TEST_UPDATE_PACKAGE").expect("Set NEXSSH_TEST_UPDATE_PACKAGE"),
+            std::env::var_os("VEXSSH_TEST_UPDATE_PACKAGE").expect("Set VEXSSH_TEST_UPDATE_PACKAGE"),
         );
         let package = read_package(&path, "0.1.5", &public_key().unwrap()).unwrap();
         println!(
-            "Verified signed NEXSSH update {} ({} bytes)",
+            "Verified signed VEXSSH update {} ({} bytes)",
             package.manifest.version, package.manifest.size
         );
     }

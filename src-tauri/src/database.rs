@@ -33,13 +33,13 @@ impl Sessions {
     fn driver_path(&self) -> Result<PathBuf, String> {
         let mut cache = self.driver_dir.lock().map_err(|e| e.to_string())?;
         if let Some(dir) = cache.as_ref() {
-            return Ok(dir.path().join("NEXSSH-database.exe"));
+            return Ok(dir.path().join("VEXSSH-database.exe"));
         }
         let dir = tempfile::Builder::new()
-            .prefix("NEXSSH-drivers-")
+            .prefix("VEXSSH-drivers-")
             .tempdir()
             .map_err(ioerr)?;
-        let path = dir.path().join("NEXSSH-database.exe");
+        let path = dir.path().join("VEXSSH-database.exe");
         std::fs::write(
             dir.path().join("THIRD-PARTY-NOTICES.txt"),
             include_bytes!("../../tools/dbbridge/THIRD-PARTY-NOTICES.txt"),
@@ -766,9 +766,9 @@ mod tests {
         let read_fixture = |key: &str| -> Value {
             serde_json::from_slice(&std::fs::read(std::env::var(key).unwrap()).unwrap()).unwrap()
         };
-        let mut db = read_fixture("NEXSSH_TEST_DB_CONNECTION");
+        let mut db = read_fixture("VEXSSH_TEST_DB_CONNECTION");
         assert_eq!(db["host"], "127.0.0.1");
-        let ssh = read_fixture("NEXSSH_TEST_CONNECTION");
+        let ssh = read_fixture("VEXSSH_TEST_CONNECTION");
         assert_eq!(ssh["hostname"], "127.0.0.1");
         let dir = tempfile::tempdir().unwrap();
         let state = AppState::new(dir.path().to_owned()).unwrap();

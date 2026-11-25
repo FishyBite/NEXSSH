@@ -17,7 +17,7 @@ fn main() {
         .arg(dir)
         .arg(".")
         .status()
-        .expect("Install Go to build the embedded NEXSSH database drivers");
+        .expect("Install Go to build the embedded VEXSSH database drivers");
     assert!(status.success(), "Failed to build the database drivers");
     tauri_build::build()
 }
