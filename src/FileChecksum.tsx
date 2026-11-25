@@ -31,7 +31,7 @@ function ChecksumDialog({ sessionId, local, remote, onClose }: {
           try {
             const count = await request<number>("file_checksum_progress", { id });
             if (active) setBytes(count);
-          } catch { return; }
+          } catch { return; } // Stop polling. The checksum request reports the result or error.
           if (active && id) timer = window.setTimeout(update, 500);
         };
         timer = window.setTimeout(update, 500);

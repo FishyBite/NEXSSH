@@ -51,7 +51,7 @@ Get the Windows x64 installer or portable executable from [VEXSSH Releases](../.
 
 ## Application data
 
-New builds use separate VEXSSH installation and storage identifiers. Existing RC7 and RC8 data stays in its original location. Keep a copy of your existing build if you need to open its data or backups.
+The RC8 download uses the same profile and vault locations as RC7. Builds from the current `main` branch use separate storage. Keep your existing build if you need to open older profiles or backups.
 
 ## Run on Windows
 
