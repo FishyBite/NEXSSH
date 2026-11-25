@@ -1,0 +1,37 @@
+.db-table-browser { min-width: 0; flex: 1; }
+.db-table-bar, .db-table-actions, .db-table-name, .db-table-filter, .db-page-size, .db-key-values, .db-null-check {
+  display: flex; align-items: center; gap: 8px;
+}
+.db-table-bar { padding: 8px 12px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.db-table-bar .button, .db-table-filter .button { min-height: 28px; padding: 4px 8px; }
+.db-table-name { min-width: 0; flex: 1 1 100px; }
+.db-table-name h3, .db-table-summary { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.db-table-actions .icon-button, .db-pager .icon-button { width: 28px; height: 28px; }
+.db-table-actions .button[aria-pressed="true"], .db-table-tools .button[aria-expanded="true"] { background: var(--selection); color: var(--accent-text); }
+.db-table-tools { background: var(--sidebar); }
+.db-table-summary { min-width: 10px; max-width: 45%; }
+.db-page-size { margin-left: auto; font-size: 11px; color: var(--muted); }
+.db-page-size select, .db-table-filter input, .db-table-filter select { min-width: 0; min-height: 28px; padding: 3px 7px; }
+.db-table-filter { padding: 8px 12px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.db-table-filter select { max-width: min(185px, 45%); }
+.db-table-filter input { flex: 1 1 100px; }
+.db-grid.db-table-grid { max-height: 52vh; }
+.db-table-sort, .db-row-action button { display: inline-flex; gap: 5px; align-items: center; background: transparent; border: 0; color: var(--text); padding: 2px; cursor: pointer; }
+.db-table-sort svg { color: var(--accent-text); }
+.db-table-sort:hover, .db-row-action button:hover { color: var(--accent-text); }
+.db-grid td.db-row-action { width: 24px; padding: 3px 8px; }
+.db-row-action button { padding: 4px; }
+.db-row-action button:disabled { opacity: .35; cursor: default; }
+.db-table-grid tbody tr:hover { background: var(--hover); }
+.db-pager { border-top: 1px solid var(--border); border-bottom: 0; }
+.db-pager small { margin-right: auto; }
+.db-column-info { max-height: 22vh; overflow: auto; border-bottom: 1px solid var(--border); }
+.db-column-info table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.db-column-info th, .db-column-info td { padding: 6px 12px; text-align: left; }
+.db-column-info th { color: var(--muted); position: sticky; top: 0; background: var(--elevated); }
+.db-key-values { flex-wrap: wrap; color: var(--muted); }
+.db-key-values code { overflow-wrap: anywhere; font-size: 12px; }
+.db-edit-values { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+.db-edit-values textarea { min-height: 100px; resize: vertical; font: 12px/1.5 Consolas, monospace; }
+.db-edit-values textarea[readonly] { background: var(--sidebar); }
+.db-null-check { align-self: start; font-size: 12px; }

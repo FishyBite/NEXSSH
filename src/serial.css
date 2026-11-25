@@ -1,0 +1,107 @@
+.serial-page[hidden],
+.serial-console[hidden] {
+  display: none;
+}
+.serial-page.has-session {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  min-height: 0;
+}
+.serial-page.has-session .page-header {
+  margin: 0;
+}
+.serial-profiles summary,
+.serial-form summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 9px 0;
+}
+.serial-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  gap: 10px;
+  margin: 10px 0 16px;
+}
+.serial-session-list,
+.serial-session-list > div,
+.serial-console header,
+.serial-console header > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.serial-session-list {
+  overflow-x: auto;
+  flex: none;
+}
+.serial-session-list > div {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  white-space: nowrap;
+}
+.serial-session-list > div.selected {
+  background: var(--selection);
+  border-color: var(--accent);
+}
+.serial-console {
+  flex: 1;
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.serial-console header {
+  background: var(--card);
+  justify-content: space-between;
+  padding: 7px 12px;
+  flex-wrap: wrap;
+}
+.serial-console header span {
+  color: var(--muted);
+}
+.serial-console header > div {
+  flex-wrap: wrap;
+}
+.serial-xterm {
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+  padding: 8px;
+}
+.serial-xterm > .xterm {
+  height: 100%;
+}
+.serial-form {
+  display: grid;
+  gap: 16px;
+}
+.serial-form details {
+  border-top: 1px solid var(--border);
+}
+.serial-form details > .field,
+.serial-form details > .checkbox-field {
+  margin-top: 8px;
+}
+.serial-form-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+.serial-port {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 4px;
+}
+.serial-port > button {
+  margin-top: 22px;
+}
+@media (max-width: 520px) {
+  .serial-form-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

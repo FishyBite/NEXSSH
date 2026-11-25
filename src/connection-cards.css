@@ -1,0 +1,86 @@
+.connections-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 255px), 1fr));
+  max-width: 1050px;
+  gap: 12px;
+  align-items: stretch;
+}
+.connection-card {
+  position: relative;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+.connection-card:hover, .connection-card:focus-within { border-color: var(--input-border); background: var(--hover); }
+.connection-card.is-current { border-color: var(--accent); }
+.connection-card-open {
+  flex: 1;
+  width: 100%;
+  display: grid;
+  align-content: space-between;
+  gap: 14px;
+  padding: 15px;
+  text-align: left;
+  min-width: 0;
+  border-radius: inherit;
+  color: var(--text);
+  cursor: pointer;
+}
+.connection-card-open:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.connection-card-top { min-width: 0; display: flex; align-items: center; gap: 10px; }
+.connection-card:has(.connection-card-menu) .connection-card-top { padding-right: 20px; }
+.connection-card-icon { width: 34px; height: 34px; flex: none; display: grid; place-items: center; background: var(--elevated); border-radius: 8px; color: var(--accent-text); }
+.connection-card-identity { display: block; min-width: 0; }
+.connection-card-identity strong, .connection-card-address { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.connection-card-identity strong { font-size: 14px; font-weight: 600; }
+.connection-card-identity strong svg { display: inline; margin-left: 6px; vertical-align: baseline; color: var(--warning); }
+.connection-card-address { font: 11px/1.6 Consolas, monospace; color: var(--muted); margin-top: 2px; }
+.connection-card-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-width: 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.connection-card-meta > span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.connection-method { display: inline-flex; align-items: center; gap: 5px; padding: 2px 7px; border-radius: 5px; background: var(--elevated); }
+.connection-live { display: inline-flex; align-items: center; gap: 5px; margin-left: auto; color: var(--success); }
+.connection-live i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.connection-card .connection-card-menu { position: absolute; top: 7px; right: 5px; width: 27px; height: 27px; }
+.connection-select { position: absolute; bottom: 6px; right: 6px; display: grid; place-items: center; width: 26px; height: 26px; }
+.connection-card:has(.connection-select) .connection-card-meta { padding-right: 25px; }
+.hosts-page .list-controls { max-width: 1050px; margin-bottom: 16px; }
+.hosts-page .result-count { white-space: nowrap; }
+.picker-card.palette-result { border: 1px solid var(--border); background: var(--card); border-radius: 8px; margin: 4px 0; }
+.picker-card.palette-result:is(:hover, .selected) { background: var(--selection); border-color: var(--accent); }
+
+.palette-results.connection-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 205px), 1fr));
+  gap: 4px 8px;
+  align-content: start;
+}
+.connection-picker > :not(.picker-card) { grid-column: 1 / -1; }
+.connection-picker .picker-card {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  align-content: center;
+  gap: 3px 8px;
+  min-width: 0;
+  padding: 10px;
+  margin: 0;
+}
+.connection-picker .picker-card > span { min-width: 0; }
+.connection-picker .picker-card strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.connection-picker .picker-card > .picker-method,
+.connection-picker .picker-card > svg:last-child:not(:first-child) { grid-column: 2; margin: 0; justify-self: start; }
+.host-mark {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--muted);
+  border-radius: 4px;
+  vertical-align: middle;
+}
+@media (forced-colors: active) {
+  .host-mark { border-color: CanvasText; }
+}

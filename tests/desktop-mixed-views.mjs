@@ -1,0 +1,96 @@
+import assert from "node:assert/strict";
+
+export async function exerciseMixedViews({ page, expect, fixture, nav }) {
+  await page.evaluate(() => {
+    const api = window.__TAURI_INTERNALS__, original = api.invoke.bind(api);
+    window.fixture.dbRoutes = [];
+    api.invoke = async (command, args = {}) => {
+      if (command !== "request") return original(command, args);
+      if (args.action === "db_prepare_connect") return { id: "attempt" };
+      if (args.action === "db_connect") {
+        window.fixture.dbRoutes.push(args.payload.sshSessionId);
+        return { id: "db-" + args.payload.sshSessionId };
+      }
+      if (args.action === "db_objects") return [];
+      return original(command, args);
+    };
+  });
+  const [first, second] = fixture.state_load.hosts;
+  const open = async host => {
+    const trigger = page.getByRole("button", {name:"Sidebar",exact:true});
+    if (await trigger.isVisible()) await trigger.click();
+    await nav("Hosts").click();
+    await page.locator(".connection-card").getByRole("button", { name: host.name, exact: true }).click();
+    await expect(page.getByRole("tab", { name: host.name, exact: true })).toHaveAttribute("aria-selected","true");
+    return page.locator(".terminal-pane.focused:visible").getAttribute("data-session-id");
+  };
+  const a = await open(first), b = await open(second);
+  assert.ok(a && b && a !== b);
+  const secondTab = page.getByRole("tab", { name: second.name, exact: true });
+  const hostColor = await secondTab.locator(".host-mark").evaluate(el => getComputedStyle(el).backgroundColor);
+  await expect(secondTab).toHaveAccessibleDescription(new RegExp(second.hostname.replaceAll(".", "\\.")));
+  await page.getByRole("tab", { name: first.name }).click();
+  await page.getByRole("button", {name:"Terminal tools",exact:true}).click();
+  await page.getByRole("button", { name: "Split terminal", exact: true }).click();
+  await page.getByRole("menuitemradio", { name: "Split side by side" }).click();
+  const pane = id => page.locator('.terminal-pane[data-session-id="' + id + '"]');
+  const shell = id => pane(id).locator(".xterm-helper-textarea");
+  const mode = (id, value) => pane(id).getByRole("combobox", {name: /^View for /}).selectOption(value);
+  const divider = page.getByRole("separator", { name: "Resize session panes" });
+  await expect(divider).toBeVisible();
+  await expect(pane(a).locator(".pane-endpoint")).toContainText(first.username + "@" + first.hostname);
+  await expect(pane(b).locator(".pane-endpoint")).toContainText(second.username + "@" + second.hostname);
+  const start = await divider.boundingBox(), panes = await page.locator(".terminal-panes").boundingBox();
+  await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(panes.x + .69 * panes.width, start.y + start.height / 2, { steps: 10 });
+  await page.mouse.up();
+  await expect(divider).toHaveAttribute("aria-valuenow","69");
+  await expect.poll(() => page.evaluate(() => Math.round(JSON.parse(localStorage.getItem("nexssh.terminal.layout.v1")).ratio))).toBe(69);
+  await divider.dblclick();
+  await expect(divider).toHaveAttribute("aria-valuenow","50");
+  await mode(b, "Files");
+  await expect(pane(b).locator('[data-file-side="remote"] .host-mark')).toHaveCSS("background-color", hostColor);
+  await expect(pane(b).locator('[data-file-side="remote"] .file-pane-header')).toContainText(second.name);
+  await expect(pane(b).locator('[data-file-side="remote"]')).toContainText(".profile");
+  await expect(shell(a)).toBeVisible();
+  await pane(a).locator(".xterm-screen").click();
+  await expect(shell(a)).toBeFocused();
+  await page.keyboard.type("x");
+  await expect.poll(() => page.evaluate(() => window.fixture.calls.filter(c => c.args?.action === "ssh_write").at(-1)?.args.payload.sessionId)).toBe(a);
+  await expect(pane(b).locator(".files-page")).toBeVisible();
+  await mode(a, "Files");
+  await expect(pane(a).locator(".files-page")).toBeVisible();
+  await expect(pane(b).locator(".files-page")).toBeVisible();
+  await mode(b, "Database");
+  await expect(pane(b).getByRole("heading",{name:"Database · " + second.name}).locator(".host-mark")).toHaveCSS("background-color", hostColor);
+  await pane(b).getByRole("button", { name:"New connection", exact:true }).first().click();
+  const form = page.getByRole("dialog");
+  await form.getByLabel("Connection name").fill("Split query");
+  await expect(form.getByLabel("Network route")).toHaveValue("ssh");
+  await form.getByRole("button",{ name:"Save & connect" }).click();
+  const query = pane(b).getByRole("textbox", {name:"SQL query"});
+  await query.fill("SELECT 'preserved'");
+  await mode(a,"Terminal");
+  await expect(shell(a)).toBeFocused();
+  await mode(b,"Terminal");
+  await expect(shell(b)).toBeFocused();
+  await mode(b,"Database");
+  await expect(query).toHaveValue("SELECT 'preserved'");
+  assert.deepEqual(await page.evaluate(() => window.fixture.dbRoutes), [b]);
+  await mode(a, "Database");
+  await pane(a).getByRole("button", { name:"New connection", exact:true }).first().click();
+  await form.getByLabel("Connection name").fill("Shared direct profile");
+  await form.getByLabel("Network route").selectOption("direct");
+  await form.getByRole("button",{ name:"Save & connect" }).click();
+  const otherQuery = pane(a).getByRole("textbox", {name:"SQL query"});
+  await otherQuery.fill("SELECT 'left'");
+  await expect(pane(b).getByRole("region",{name:"Saved database connections"}).getByText("Shared direct profile", {exact:true})).toBeVisible();
+  await expect(query).toHaveValue("SELECT 'preserved'");
+  await mode(a, "Terminal");
+  await expect(shell(a)).toBeFocused();
+  await mode(a, "Database");
+  await expect(otherQuery).toHaveValue("SELECT 'left'");
+  await expect(query).toHaveValue("SELECT 'preserved'");
+  assert.deepEqual(await page.evaluate(() => [...window.fixture.sessions.keys()]), [a,b]);
+}
