@@ -15,9 +15,9 @@ It keeps a shell and the files you’re working on in the same window. Open a sa
 
 Get the Windows x64 installer or portable executable from [VEXSSH Releases](../../releases).
 
-## Upgrading to VEXSSH from RC7
+## Application data
 
-Close RC7 before running VEXSSH Setup under the same Windows account. Setup updates the existing installation in place. VEXSSH uses the existing host profiles, vault, and workspace settings. VEXSSH keeps the original application ID, installation path, and storage identifiers for compatibility with existing taskbar pins, profiles, encrypted backups, and pending transfers.
+New builds use separate VEXSSH installation and storage identifiers. Existing RC7 and RC8 data stays in its original location. Keep a copy of your existing build if you need to open its data or backups.
 
 ## Run on Windows
 

@@ -22,7 +22,7 @@ export function executionText(text: string, start: number, end: number): string 
   return (start < end ? text.slice(start, end) : text).trim();
 }
 export interface SavedQuery { id: string; name: string; text: string }
-export const libraryKey = (workspace: string, profile: string) => "nexssh.db.queries.v1." + JSON.stringify([workspace, profile]);
+export const libraryKey = (workspace: string, profile: string) => "vexssh.db.queries.v1." + JSON.stringify([workspace, profile]);
 export function savedQueries(key: string): SavedQuery[] {
   const value: unknown = JSON.parse(localStorage.getItem(key) || "[]");
   if (!Array.isArray(value)) throw new Error("The saved query library could not be read.");

@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 
 export async function exerciseEnhancements({ page, expect, fixture, paletteAction }) {
   const nav = (name) => page.locator(".sidebar").getByRole("button", { name, exact: true });
-  const workspace = () => page.evaluate(() => JSON.parse(localStorage.getItem("nexssh.workspace.v1")));
+  const workspace = () => page.evaluate(() => JSON.parse(localStorage.getItem("vexssh.workspace.v1")));
   const tabIds = () => page.locator(".session-tab").evaluateAll((tabs) => tabs.map((tab) => tab.dataset.sessionId));
   const tab = (id) => page.locator(`.session-tab[data-session-id="${id}"] [role="tab"]`);
   const activeId = () => page.getByRole("tab", { selected: true }).evaluate((button) => button.closest(".session-tab").dataset.sessionId);
@@ -147,10 +147,10 @@ export async function exerciseEnhancements({ page, expect, fixture, paletteActio
   const restore = page.getByRole("checkbox", { name: "Restore tabs and layout when VEXSSH opens", exact: true });
   await restore.uncheck();
   await page.getByRole("button", { name: "Save changes", exact: true }).click();
-  await expect.poll(() => page.evaluate(() => localStorage.getItem("nexssh.workspace.v1"))).toBeNull();
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("vexssh.workspace.v1"))).toBeNull();
   await restore.check();
   await page.getByRole("button", { name: "Save changes", exact: true }).click();
-  await expect.poll(() => page.evaluate(() => localStorage.getItem("nexssh.workspace.v1") !== null)).toBe(true);
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("vexssh.workspace.v1") !== null)).toBe(true);
   await categories.getByRole("button", { name: "Updates", exact: true }).click();
   const updates = page.locator(".updates-panel");
   const choose = updates.getByRole("button", { name: "Choose update package", exact: true });

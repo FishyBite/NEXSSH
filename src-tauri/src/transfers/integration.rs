@@ -52,7 +52,7 @@ fn transport_disconnect_resume_and_conflict_policies() {
     .unwrap();
     let root = std::env::temp_dir().join(format!("vexssh-resume-test-{}", uuid::Uuid::new_v4()));
     let state = AppState::new(root.join("state")).unwrap();
-    state.db().unwrap().execute_batch("CREATE TABLE nexssh_transfers(id TEXT PRIMARY KEY,record TEXT,updated_at INTEGER);CREATE TABLE transfer_conflict_policies(batch TEXT PRIMARY KEY,policy TEXT);").unwrap();
+    state.db().unwrap().execute_batch("CREATE TABLE vexssh_transfers(id TEXT PRIMARY KEY,record TEXT,updated_at INTEGER);CREATE TABLE transfer_conflict_policies(batch TEXT PRIMARY KEY,policy TEXT);").unwrap();
     let (control, _) = connection(&fixture);
     let control_sftp = control.sftp().unwrap();
     let remote_root = format!("/resume-{}", uuid::Uuid::new_v4());

@@ -182,7 +182,7 @@ try {
   await expect(page.getByRole("button", { name: "Reconnect server", exact: true })).toBeVisible();
   await page.evaluate(() => fixture.reconnect());
   await expect(path("remote")).toHaveValue("/srv/replacement");
-  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("nexssh.files.navigation.v1")));
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("vexssh.files.navigation.v1")));
   assert(saved.scopes.every(scope => !Object.hasOwn(scope, "password") && !Object.hasOwn(scope, "passphrase")));
   assert.equal(saved.scopes.find(scope => scope.key === "host:alpha").lastPath, "/srv/replacement");
   const environmentContrast = [];

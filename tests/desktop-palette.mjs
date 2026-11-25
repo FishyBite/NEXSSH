@@ -139,7 +139,7 @@ try {
       });
       await context.addInitScript(
         ({ fixture, expanded, scrollResult, injectError, persistConfig, currentVersion, terminalClipboard }) => {
-          localStorage.setItem("nexssh.terminal.expanded", String(expanded));
+          localStorage.setItem("vexssh.terminal.expanded", String(expanded));
           window.isTauri = true;
           const callbacks = new Map();
           const listeners = new Map();

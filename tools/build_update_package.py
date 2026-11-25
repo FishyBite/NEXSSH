@@ -45,8 +45,8 @@ def main():
     if not expected or public != base64.b64decode(expected.group(1)):
         raise ValueError("Signing key does not match the application's trusted release key")
     manifest = json.dumps({
-        "schema": 1, "product": "com.nexssh.desktop", "version": version,
-        "target": "x86_64-pc-windows-msvc", "file": "NEXSSH.exe",
+        "schema": 1, "product": "com.vexssh.desktop", "version": version,
+        "target": "x86_64-pc-windows-msvc", "file": "VEXSSH.exe",
         "size": len(executable), "sha256": hashlib.sha256(executable).hexdigest(),
     }, sort_keys=True, separators=(",", ":")).encode("utf-8")
     signature = key.sign(manifest)
@@ -58,7 +58,7 @@ def main():
         with ZipFile(staged, "w", compression=ZIP_STORED, allowZip64=False) as package:
             package.writestr("manifest.json", manifest)
             package.writestr("manifest.sig", signature)
-            package.writestr("NEXSSH.exe", executable)
+            package.writestr("VEXSSH.exe", executable)
         with ZipFile(staged) as package:
             if package.testzip() is not None:
                 raise ValueError("Update ZIP verification failed")

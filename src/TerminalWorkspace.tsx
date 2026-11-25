@@ -173,7 +173,7 @@ export function readLayout(restoreWorkspace: boolean) {
       : {
           ...defaultTerminalLayout,
           fullscreen:
-            localStorage.getItem("nexssh.terminal.expanded") === "true",
+            localStorage.getItem("vexssh.terminal.expanded") === "true",
         };
   } catch {
     return { ...defaultTerminalLayout };
@@ -451,7 +451,7 @@ export function TerminalWorkspace({
         localStorage.setItem(terminalLayoutKey, JSON.stringify(layout));
       else localStorage.removeItem(terminalLayoutKey);
       localStorage.setItem(
-        "nexssh.terminal.expanded",
+        "vexssh.terminal.expanded",
         String(layout.fullscreen),
       );
     } catch {}

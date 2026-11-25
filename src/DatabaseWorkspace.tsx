@@ -26,7 +26,7 @@ interface Props {
   onConnectSsh?: (hostId: string, signal: AbortSignal, replacementId?: string) => Promise<Session>;
   onDirtyChange?: (dirty: boolean) => void;
 }
-function linkKey(workspace: string, hostId: string) { return "nexssh.db.link.v1." + JSON.stringify([workspace, hostId]); }
+function linkKey(workspace: string, hostId: string) { return "vexssh.db.link.v1." + JSON.stringify([workspace, hostId]); }
 export default function DatabaseWorkspace({ workspace, sessions, hosts = [], active, notify, context, openRequest, onOpenConsumed, fileRequest, onFileConsumed, onConnectSsh, onDirtyChange }: Props) {
   const [profiles, setProfiles] = useState(() => readProfiles(workspace));
   useEffect(() => observeProfiles(workspace, () => setProfiles(readProfiles(workspace))), [workspace]);

@@ -115,9 +115,9 @@ fn initialize(state: &AppState) -> Result<(), String> {
     }
     let db = state.db()?;
     db.execute_batch("CREATE TABLE IF NOT EXISTS transfer_conflict_policies(batch TEXT PRIMARY KEY, policy TEXT NOT NULL)").map_err(|e|e.to_string())?;
-    db.execute_batch("CREATE TABLE IF NOT EXISTS nexssh_transfers (id TEXT PRIMARY KEY, record TEXT NOT NULL, updated_at INTEGER NOT NULL);").map_err(|e|e.to_string())?;
+    db.execute_batch("CREATE TABLE IF NOT EXISTS vexssh_transfers (id TEXT PRIMARY KEY, record TEXT NOT NULL, updated_at INTEGER NOT NULL);").map_err(|e|e.to_string())?;
     let mut query = db
-        .prepare("SELECT record FROM nexssh_transfers")
+        .prepare("SELECT record FROM vexssh_transfers")
         .map_err(|e| e.to_string())?;
     let records = query
         .query_map([], |row| row.get::<_, String>(0))
@@ -132,7 +132,7 @@ fn initialize(state: &AppState) -> Result<(), String> {
             record.error = Some("Application closed before the transfer completed.".into());
             record.finished_at = Some(now());
             db.execute(
-                "UPDATE nexssh_transfers SET record=?1,updated_at=?2 WHERE id=?3",
+                "UPDATE vexssh_transfers SET record=?1,updated_at=?2 WHERE id=?3",
                 params![
                     serde_json::to_string(&record).map_err(|e| e.to_string())?,
                     now(),
@@ -147,7 +147,7 @@ fn initialize(state: &AppState) -> Result<(), String> {
 }
 
 fn persist(state: &AppState, transfer: &Transfer) -> Result<(), String> {
-    state.db()?.execute("INSERT INTO nexssh_transfers(id,record,updated_at) VALUES(?1,?2,?3) ON CONFLICT(id) DO UPDATE SET record=excluded.record,updated_at=excluded.updated_at",params![transfer.id,serde_json::to_string(transfer).map_err(|e|e.to_string())?,now()]).map_err(|e|e.to_string())?;
+    state.db()?.execute("INSERT INTO vexssh_transfers(id,record,updated_at) VALUES(?1,?2,?3) ON CONFLICT(id) DO UPDATE SET record=excluded.record,updated_at=excluded.updated_at",params![transfer.id,serde_json::to_string(transfer).map_err(|e|e.to_string())?,now()]).map_err(|e|e.to_string())?;
     Ok(())
 }
 
@@ -155,7 +155,7 @@ fn get_transfer(state: &AppState, id: &str) -> Result<Transfer, String> {
     let record: String = state
         .db()?
         .query_row(
-            "SELECT record FROM nexssh_transfers WHERE id=?1",
+            "SELECT record FROM vexssh_transfers WHERE id=?1",
             [id],
             |row| row.get(0),
         )
@@ -529,7 +529,7 @@ fn copy_scp(
 ) -> Result<(), String> {
     let upload = progress.transfer.direction == "upload";
     let staged = PathBuf::from(format!(
-        "{}.nexssh-{}.part",
+        "{}.vexssh-{}.part",
         entry.destination,
         uuid::Uuid::new_v4()
     ));
@@ -911,7 +911,7 @@ pub fn dispatch(
     match action {
         "transfer_list" => {
             let db = state.db()?;
-            let mut statement=db.prepare("SELECT record FROM nexssh_transfers ORDER BY updated_at DESC, rowid DESC LIMIT 1000").map_err(|e|e.to_string())?;
+            let mut statement=db.prepare("SELECT record FROM vexssh_transfers ORDER BY updated_at DESC, rowid DESC LIMIT 1000").map_err(|e|e.to_string())?;
             let rows = statement
                 .query_map([], |row| row.get::<_, String>(0))
                 .map_err(|e| e.to_string())?;
@@ -1093,7 +1093,7 @@ mod tests {
         let original = state.capture_binding("target").unwrap();
         let record = json!({"id":"queued-before-edit","sessionId":"old-session","hostId":"target","binding":original,"source":"local-file","destination":"/remote-file","direction":"upload","protocol":"sftp","status":"failed","totalBytes":0,"transferredBytes":0,"speedBytesPerSecond":0.0,"etaSeconds":null,"error":null,"startedAt":0,"finishedAt":null,"durationSeconds":null});
         let stored: Transfer = serde_json::from_value(record.clone()).unwrap();
-        state.db().unwrap().execute_batch("CREATE TABLE nexssh_transfers (id TEXT PRIMARY KEY, record TEXT NOT NULL, updated_at INTEGER NOT NULL)").unwrap();
+        state.db().unwrap().execute_batch("CREATE TABLE vexssh_transfers (id TEXT PRIMARY KEY, record TEXT NOT NULL, updated_at INTEGER NOT NULL)").unwrap();
         persist(&state, &stored).unwrap();
         drop(state);
         let state = AppState::new(directory.clone()).unwrap();

@@ -1,6 +1,6 @@
 import type { FileEntry } from "./types";
 
-export const navigationStorageKey = "nexssh.files.navigation.v1";
+export const navigationStorageKey = "vexssh.files.navigation.v1";
 const pathLimit = 4096;
 export type FolderHistory = { paths: string[]; index: number };
 export type FolderScope = {

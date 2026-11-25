@@ -1,6 +1,6 @@
 import type { Config, Session } from "./types";
 
-export const WORKSPACE_KEY = "nexssh.workspace.v1";
+export const WORKSPACE_KEY = "vexssh.workspace.v1";
 const MAX_TABS = 64;
 const cleanName = (value: string) => value.replace(/[\u0000-\u001f\u007f]/g, "").slice(0, 120);
 const validId = (value: unknown): value is string =>

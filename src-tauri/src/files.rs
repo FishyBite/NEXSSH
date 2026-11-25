@@ -273,7 +273,7 @@ fn replace_remote_revision(
     expected: &str,
 ) -> Result<(), String> {
     let temp = PathBuf::from(format!(
-        "{}.nexssh-{}.part",
+        "{}.vexssh-{}.part",
         path.to_string_lossy(),
         uuid::Uuid::new_v4()
     ));
@@ -312,7 +312,7 @@ pub fn save_remote(
     ensure_revision(&original, expected)?;
     let mode = (remote_regular(sftp, path)?.perm.unwrap_or(0o600) & 0o777) as i32;
     let backup_path = format!(
-        "{}.nexssh-{}.bak",
+        "{}.vexssh-{}.bak",
         path.to_string_lossy(),
         uuid::Uuid::new_v4()
     );
@@ -336,8 +336,8 @@ fn save_local(path: &Path, content: &[u8], expected: &str, backup: bool) -> Resu
     let original = local_bytes(path)?;
     ensure_revision(&original, expected)?;
     let id = uuid::Uuid::new_v4();
-    let temporary = PathBuf::from(format!("{}.nexssh-{id}.part", path.display()));
-    let backup_path = PathBuf::from(format!("{}.nexssh-{id}.bak", path.display()));
+    let temporary = PathBuf::from(format!("{}.vexssh-{id}.part", path.display()));
+    let backup_path = PathBuf::from(format!("{}.vexssh-{id}.bak", path.display()));
     let result = (|| {
         if backup {
             let mut copy = fs::OpenOptions::new()

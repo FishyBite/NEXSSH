@@ -2,7 +2,7 @@ import { parentPath } from "./paths";
 import type { Transfer } from "./types";
 import type { FileSide } from "./fileTransferDrag";
 
-export const pairStorage = "nexssh.files.pairs.v1";
+export const pairStorage = "vexssh.files.pairs.v1";
 export type FolderPair = {
   id: string;
   name: string;
