@@ -12,7 +12,7 @@ VEXSSH is a Windows app for working with servers and serial devices. Open a save
 
 ## Terminal to SFTP
 
-Browse a host's files, then return to the same SSH session. This demo uses a sample Ubuntu connection.
+Type ls -la in the terminal, click SFTP to browse the host's files, then return to the same SSH session. The demo uses a sample Ubuntu connection.
 
 <details>
 <summary>Watch the 9-second demo</summary>
