@@ -1,0 +1,19 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "NEXSSH",
+  "version": "1.0.0-rc.7",
+  "identifier": "com.nexssh.desktop",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [{ "title": "NEXSSH", "width": 1380, "height": 900, "minWidth": 760, "minHeight": 560, "maximized": true, "visible": false, "create": false, "backgroundColor": "#0b0d12" }],
+    "security": {
+      "csp": "default-src 'self'; connect-src ipc: http://ipc.localhost; img-src 'self' asset: http://asset.localhost data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; worker-src 'self' blob:; script-src 'self'"
+    }
+  },
+  "bundle": { "active": false, "targets": ["nsis"], "category": "DeveloperTool", "icon": ["icons/icon.ico", "icons/icon.png"] }
+}

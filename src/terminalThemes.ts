@@ -1,0 +1,77 @@
+import type { ITheme } from "@xterm/xterm";
+import type { Settings } from "./types";
+
+export const terminalThemes: Record<Settings["terminalTheme"], ITheme> = {
+  dark: {
+    background: "#0B0D12",
+    foreground: "#E4E8F2",
+    cursor: "#8EA6FF",
+    selectionBackground: "#3A4975",
+    black: "#1C2230",
+    red: "#FF647C",
+    green: "#35C98A",
+    yellow: "#F5B94C",
+    blue: "#6C8CFF",
+    magenta: "#B390FF",
+    cyan: "#64C8DB",
+    white: "#D8DEED",
+    brightBlack: "#929BAD",
+    brightRed: "#FF91A2",
+    brightGreen: "#67E2AB",
+    brightYellow: "#FFD17D",
+    brightBlue: "#9BB0FF",
+    brightMagenta: "#CDB3FF",
+    brightCyan: "#91E3F0",
+    brightWhite: "#FFFFFF",
+  },
+  light: {
+    background: "#F8FAFD",
+    foreground: "#172033",
+    cursor: "#3453B9",
+    selectionBackground: "#CCD8FB",
+    black: "#172033",
+    red: "#B32642",
+    green: "#176B41",
+    yellow: "#775813",
+    blue: "#3453B9",
+    magenta: "#7547A8",
+    cyan: "#166979",
+    white: "#65738A",
+    brightBlack: "#526079",
+    brightRed: "#A81935",
+    brightGreen: "#11603A",
+    brightYellow: "#6F4A00",
+    brightBlue: "#2846AA",
+    brightMagenta: "#69379E",
+    brightCyan: "#105C6B",
+    brightWhite: "#172033",
+  },
+  solarized: {
+    background: "#002B36",
+    foreground: "#93A1A1",
+    cursor: "#93A1A1",
+    selectionBackground: "#31535C",
+    black: "#073642",
+    red: "#F06B64",
+    green: "#A7B72C",
+    yellow: "#C69C35",
+    blue: "#58A5D5",
+    magenta: "#DC7EA7",
+    cyan: "#50B6AE",
+    white: "#EEE8D5",
+    brightBlack: "#839496",
+    brightRed: "#FC8A7C",
+    brightGreen: "#C3D453",
+    brightYellow: "#DFC063",
+    brightBlue: "#80BFE4",
+    brightMagenta: "#ECA3C1",
+    brightCyan: "#78CFC7",
+    brightWhite: "#FDF6E3",
+  },
+};
+
+export function getTerminalTheme(name?: string): ITheme {
+  return (
+    terminalThemes[name as Settings["terminalTheme"]] || terminalThemes.dark
+  );
+}

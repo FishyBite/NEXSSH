@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark light" />
+    <!-- Tauri nonces inline style tags. Keep first-paint CSS external so xterm's per-session styles can load. -->
+    <link rel="stylesheet" href="/startup.css" />
+    <link rel="icon" type="image/svg+xml" href="/nexssh.svg" />
+    <title>NEXSSH</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <div id="startup-status" role="status">
+      Opening NEXSSH…
+      <a href="">Reload workspace</a>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

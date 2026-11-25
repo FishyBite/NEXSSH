@@ -1,0 +1,38 @@
+.drawer-resizer {
+  position: relative;
+  flex: 0 0 7px;
+  cursor: col-resize;
+  touch-action: none;
+  user-select: none;
+  background: var(--sidebar);
+}
+.drawer-resizer::before {
+  content: "";
+  position: absolute;
+  inset: 0 3px;
+  background: var(--border);
+}
+.drawer-resizer:is(:hover, :focus-visible, [data-dragging])::before {
+  background: var(--accent);
+}
+.drawer-resizer:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+.terminal-content > .drawer-resizer + .terminal-file-drawer {
+  flex-basis: var(--drawer-inline, clamp(244px, 26%, 348px));
+  border-inline-start: 0;
+}
+@container (max-width: 610px) {
+  .terminal-content > .drawer-resizer + .terminal-file-drawer {
+    flex-basis: var(--drawer-inline, min(46%, 238px));
+  }
+}
+@container (max-width: 490px) {
+  .drawer-resizer { cursor: row-resize; }
+  .drawer-resizer::before { inset: 3px 0; }
+  .terminal-content > .drawer-resizer + .terminal-file-drawer {
+    flex-basis: var(--drawer-block, 48%);
+    border-block-start: 0;
+  }
+}

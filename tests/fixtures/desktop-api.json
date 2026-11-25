@@ -1,0 +1,58 @@
+{
+  "state_load": {
+    "hosts": [
+      {
+        "id": "fixture-key",
+        "name": "Fixture key host",
+        "hostname": "key.example.invalid",
+        "port": 22,
+        "username": "fixture",
+        "authMethod": "key",
+        "keySource": "file",
+        "identityFile": "C:\\nexssh-test\\fixture-key",
+        "workspaceId": "fixture-workspace",
+        "tags": [],
+        "color": "#6C8CFF",
+        "notes": "",
+        "favorite": false,
+        "environment": {}
+      },
+      {
+        "id": "fixture-password",
+        "name": "Fixture password host",
+        "hostname": "password.example.invalid",
+        "port": 22,
+        "username": "fixture",
+        "authMethod": "password",
+        "workspaceId": "fixture-workspace",
+        "tags": [],
+        "color": "#6C8CFF",
+        "notes": "",
+        "favorite": false,
+        "environment": {}
+      }
+    ],
+    "workspaces": [{ "id": "fixture-workspace", "name": "Fixture workspace" }],
+    "groups": [],
+    "snippets": [],
+    "terminalProfiles": [],
+    "settings": {
+      "theme": "dark",
+      "terminalTheme": "dark",
+      "fontFamily": "Consolas",
+      "fontSize": 14,
+      "cursorStyle": "block",
+      "copyOnSelect": false,
+      "timeout": 15,
+      "keepalive": 30,
+      "defaultPort": 22,
+      "downloadDirectory": "",
+      "transferConcurrency": 2,
+      "sidebarCollapsed": false,
+      "reconnectAttempts": 0,
+      "reconnectDelay": 5
+    }
+  },
+  "keys_list": [],
+  "transfer_list": []
+}

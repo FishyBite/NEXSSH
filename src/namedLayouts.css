@@ -1,0 +1,8 @@
+.named-layouts {display: grid; gap: 16px}
+.named-layout-save {display: flex; flex-wrap: wrap; align-items: end; gap: 8px}
+.named-layout-save .field {flex: 1 1 180px; margin: 0}
+.named-layout-list {list-style: none; margin: 0; padding: 0; max-height: 48vh; overflow: auto}
+.named-layout-list li {display: flex; gap: 9px; align-items: center; padding: 12px 0; border-top: 1px solid var(--border)}
+.named-layout-label {min-width: 0; flex: 1; display: grid; gap: 4px}
+.named-layout-label > * {overflow: hidden; text-overflow: ellipsis; white-space: nowrap}
+.named-layout-empty, .named-layout-label small {margin: 0; color: var(--muted)}
