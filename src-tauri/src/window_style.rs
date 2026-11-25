@@ -148,18 +148,6 @@ fn apply(app: &tauri::AppHandle, theme: Theme) -> bool {
 
 struct StartupWindow {
     revealed: AtomicBool,
-    #[cfg(windows)]
-    cloaked: bool,
-}
-
-#[cfg(windows)]
-fn set_cloaked(window: &tauri::WebviewWindow, cloaked: bool) -> bool {
-    use windows::Win32::Graphics::Dwm::{DwmSetWindowAttribute, DWMWA_CLOAK};
-    let Ok(hwnd) = window.hwnd() else { return false; };
-    let value = i32::from(cloaked);
-    unsafe {
-        DwmSetWindowAttribute(hwnd, DWMWA_CLOAK, std::ptr::from_ref(&value).cast(), std::mem::size_of_val(&value) as u32)
-    }.is_ok()
 }
 
 pub fn reveal(app: &tauri::AppHandle) -> Result<(), String> {
@@ -173,15 +161,9 @@ fn present(app: &tauri::AppHandle, fallback: bool) -> Result<(), String> {
         if startup.revealed.load(Ordering::Relaxed) {
             return;
         }
-        let shown = handle.get_webview_window("main").is_some_and(|window| {
-            #[cfg(windows)]
-            if startup.cloaked {
-                // Give DWM a composition pass with the rendered WebView at its final size.
-                unsafe { let _ = windows::Win32::Graphics::Dwm::DwmFlush(); }
-                return set_cloaked(&window, false);
-            }
-            window.show().is_ok()
-        });
+        let shown = handle
+            .get_webview_window("main")
+            .is_some_and(|window| window.show().is_ok());
         if shown {
             startup.revealed.store(true, Ordering::Relaxed);
         } else if fallback {
@@ -219,23 +201,9 @@ pub fn initialize(app: &tauri::AppHandle) -> tauri::Result<()> {
         Theme::Light
     } else { theme };
     apply_on_main_thread(app, native_theme);
-    #[cfg(windows)]
-    let cloaked = app.get_webview_window("main").is_some_and(|window| {
-        // Windows applies maximized bounds on ShowWindow. Compose at those bounds
-        // before uncovering the window, so the first frame has its final layout.
-        if !set_cloaked(&window, true) {
-            return false;
-        }
-        if window.show().is_ok() {
-            return true;
-        }
-        set_cloaked(&window, false);
-        false
-    });
+    // Keep the native window hidden until the frontend is ready to reveal it.
     app.manage(StartupWindow {
         revealed: AtomicBool::new(false),
-        #[cfg(windows)]
-        cloaked,
     });
     let handle = app.clone();
     tauri::async_runtime::spawn(async move {
