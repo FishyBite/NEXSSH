@@ -160,8 +160,8 @@ export async function exerciseSessionNavigation({ page, expect, fixture, nav }) 
   await expect(mode("SFTP")).toBeInViewport();
   await expect(selectedTab(nameB)).toBeInViewport();
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),"Narrow workspace overflows horizontally");
-  if (process.env.NEXSSH_SESSION_NAV_CAPTURE) {
-    await page.screenshot({path:process.env.NEXSSH_SESSION_NAV_CAPTURE});
+  if (process.env.VEXSSH_SESSION_NAV_CAPTURE) {
+    await page.screenshot({path:process.env.VEXSSH_SESSION_NAV_CAPTURE});
   }
   await page.setViewportSize({width:1380,height:900});
   await setProgress("upA",idA,"archive-A.zip",100,"completed");

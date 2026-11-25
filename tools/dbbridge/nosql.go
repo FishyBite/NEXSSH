@@ -57,7 +57,7 @@ func openMongo(ctx context.Context, c Profile) (Database, error) {
 	} else {
 		opts.SetHosts([]string{net.JoinHostPort(c.Host, strconv.Itoa(c.Port))})
 	}
-	opts.SetAppName("NEXSSH").
+	opts.SetAppName("VEXSSH").
 		SetConnectTimeout(10 * time.Second).SetServerSelectionTimeout(12 * time.Second).
 		SetMaxPoolSize(4).SetRetryWrites(false)
 	if c.ForwardPort > 0 {

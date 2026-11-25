@@ -172,7 +172,7 @@ export async function exerciseDatabases({ page, expect, nav, paletteAction }) {
   await page.getByRole("button", {name:"Switch to Reporting A"}).click();
   await expect(editor).toHaveValue("SELECT 'after reconnect'");
   await page.evaluate(() => window.fixture.emit("tauri://close-requested", null));
-  const closing = page.getByRole("dialog", {name:"Close NEXSSH?"});
+  const closing = page.getByRole("dialog", {name:"Close VEXSSH?"});
   await expect(closing).toContainText("Unsaved query edits");
   await closing.getByRole("button", {name:"Cancel"}).click();
   await page.getByLabel("Workspace", {exact:true}).selectOption({label:"Other workspace"});

@@ -7,7 +7,7 @@ export async function request<T = unknown>(
 ): Promise<T> {
   if (!desktop)
     throw new Error(
-      "Open NEXSSH desktop to use SSH, your saved configuration, and local files.",
+      "Open VEXSSH desktop to use SSH, your saved configuration, and local files.",
     );
   return invoke<T>("request", { action, payload });
 }

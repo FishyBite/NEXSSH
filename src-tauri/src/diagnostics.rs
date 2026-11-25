@@ -140,7 +140,7 @@ mod tests {
 
     fn fixture() -> (std::path::PathBuf, HashSet<String>, Value) {
         (
-            std::env::temp_dir().join(format!("nexssh-diagnostics-{}", uuid::Uuid::new_v4())),
+            std::env::temp_dir().join(format!("vexssh-diagnostics-{}", uuid::Uuid::new_v4())),
             HashSet::from(["index-Test123.js".into()]),
             json!({"category":"react", "errorClass":"TypeError", "reactCode":185,
                 "frames":[{"asset":"index-Test123.js","line":1,"column":320}]}),

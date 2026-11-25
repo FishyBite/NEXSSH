@@ -102,7 +102,7 @@ export async function exercisePreviewEdit({ page, expect, firstId, clickOutput, 
   await expect(content).toContainText("surviving draft");
   await page.keyboard.press("Control+s");
   await page.evaluate(() => window.fixture.emit("tauri://close-requested", {}));
-  const appClose = page.getByRole("dialog", { name: "Close NEXSSH?", exact: true });
+  const appClose = page.getByRole("dialog", { name: "Close VEXSSH?", exact: true });
   await expect(appClose.getByText(/Unsaved file edits will be discarded/)).toBeVisible();
   await expect(appClose.getByRole("button", { name: "Cancel", exact: true })).toBeFocused();
   await page.keyboard.press("Escape");

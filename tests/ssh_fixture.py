@@ -14,7 +14,7 @@ HOST_KEY = asyncssh.generate_private_key('ssh-ed25519')
 USER_KEY = asyncssh.generate_private_key('ssh-ed25519')
 KEY_PASSWORD = secrets.token_urlsafe(24)
 (ROOT / 'identity').write_bytes(USER_KEY.export_private_key(passphrase=KEY_PASSWORD))
-(FILES / 'hello.txt').write_text('NEXSSH integration test\n', encoding='utf-8')
+(FILES / 'hello.txt').write_text('VEXSSH integration test\n', encoding='utf-8')
 (FILES / 'nested').mkdir(exist_ok=True)
 (FILES / 'nested' / 'settings.json').write_text('{"enabled":true}\n', encoding='utf-8')
 
@@ -26,7 +26,7 @@ class Server(asyncssh.SSHServer):
         return True
 
     def validate_password(self, username, password):
-        return username == 'nexssh-test' and secrets.compare_digest(password, PASSWORD)
+        return username == 'vexssh-test' and secrets.compare_digest(password, PASSWORD)
 
     def public_key_auth_supported(self):
         return True
@@ -36,7 +36,7 @@ class Server(asyncssh.SSHServer):
         extra = ROOT / 'authorized.pub'
         if extra.exists():
             allowed.append(asyncssh.read_public_key(extra))
-        return username == 'nexssh-test' and key in allowed
+        return username == 'vexssh-test' and key in allowed
 
     def connection_requested(self, dest_host, dest_port, orig_host, orig_port):
         return dest_host in ('127.0.0.1', 'localhost')
@@ -49,7 +49,7 @@ async def process(session):
         session.stderr.write('This Windows fixture has no Linux /proc filesystem.\n')
         session.exit(1)
         return
-    session.stdout.write('NEXSSH loopback SSH test server\r\n$ ')
+    session.stdout.write('VEXSSH loopback SSH test server\r\n$ ')
     while True:
         try:
             line = await session.stdin.readline()
@@ -80,7 +80,7 @@ async def main():
         allow_scp=True,
     )
     (ROOT / 'connection.json').write_text(json.dumps({
-        'hostname': '127.0.0.1', 'port': 18991, 'username': 'nexssh-test',
+        'hostname': '127.0.0.1', 'port': 18991, 'username': 'vexssh-test',
         'password': PASSWORD, 'fingerprint': HOST_KEY.get_fingerprint(),
         'identityFile': str(ROOT / 'identity'), 'passphrase': KEY_PASSWORD,
         'echoPort': 18992,

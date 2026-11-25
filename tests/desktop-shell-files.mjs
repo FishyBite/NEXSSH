@@ -136,7 +136,7 @@ export async function exerciseShellFiles({ page, expect, fixture }) {
   const hint=drawer.locator(".drawer-drop-hint");
   await expect(hint).toContainText(root+"/builds");
   await expect(hint).toContainText(fixture.state_load.hosts[0].name);
-  if (process.env.NEXSSH_SHELL_FILES_CAPTURE) await page.screenshot({path:process.env.NEXSSH_SHELL_FILES_CAPTURE});
+  if (process.env.VEXSSH_SHELL_FILES_CAPTURE) await page.screenshot({path:process.env.VEXSSH_SHELL_FILES_CAPTURE});
   await emitDrag("drop",entries);
   await expect.poll(async()=> (await queued()).length).toBe(2);
   const [first,second]=await queued();

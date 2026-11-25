@@ -1,4 +1,4 @@
-"""Build a signed, stored ZIP for the NEXSSH local updater."""
+"""Build a signed, stored ZIP for the VEXSSH local updater."""
 import argparse
 import base64
 import hashlib
@@ -29,8 +29,8 @@ def main():
         raise RuntimeError("Create this Windows release package on Windows to verify its resource version")
     result = subprocess.run(
         ["powershell.exe", "-NoProfile", "-NonInteractive", "-Command",
-         "(Get-Item -LiteralPath $env:NEXSSH_UPDATE_BINARY).VersionInfo.ProductVersion"],
-        env={**os.environ, "NEXSSH_UPDATE_BINARY": str(binary)},
+         "(Get-Item -LiteralPath $env:VEXSSH_UPDATE_BINARY).VersionInfo.ProductVersion"],
+        env={**os.environ, "VEXSSH_UPDATE_BINARY": str(binary)},
         text=True, capture_output=True, check=True, creationflags=subprocess.CREATE_NO_WINDOW,
     )
     if result.stdout.strip() != version:
@@ -52,7 +52,7 @@ def main():
     signature = key.sign(manifest)
     output = args.output.resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile(prefix="nexssh-release-", suffix=".tmp", dir=output.parent, delete=False) as temporary:
+    with tempfile.NamedTemporaryFile(prefix="vexssh-release-", suffix=".tmp", dir=output.parent, delete=False) as temporary:
         staged = Path(temporary.name)
     try:
         with ZipFile(staged, "w", compression=ZIP_STORED, allowZip64=False) as package:
@@ -66,7 +66,7 @@ def main():
         os.replace(staged, output)
     finally:
         staged.unlink(missing_ok=True)
-    print(f"Signed NEXSSH {version} update package: {output.name} ({output.stat().st_size} bytes)")
+    print(f"Signed VEXSSH {version} update package: {output.name} ({output.stat().st_size} bytes)")
 
 
 if __name__ == "__main__":

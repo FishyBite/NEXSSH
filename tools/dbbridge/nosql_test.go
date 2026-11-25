@@ -107,7 +107,7 @@ func localNoSQLFixture(t *testing.T, engine, portEnv string) (Database, context.
 	// Exercise forwarded dialing with a hostname that cannot resolve locally.
 	c := Profile{Engine: engine, Host: "database.invalid", Port: 27017, ForwardPort: port}
 	if engine == "mongodb" {
-		c.Database = "nexssh_fixture"
+		c.Database = "vexssh_fixture"
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
 	t.Cleanup(cancel)
@@ -120,7 +120,7 @@ func localNoSQLFixture(t *testing.T, engine, portEnv string) (Database, context.
 }
 
 func TestMongoLoopback(t *testing.T) {
-	db, ctx := localNoSQLFixture(t, "mongodb", "NEXSSH_FIXTURE_MONGO_PORT")
+	db, ctx := localNoSQLFixture(t, "mongodb", "VEXSSH_FIXTURE_MONGO_PORT")
 	name := fmt.Sprintf("fixture_%d", time.Now().UnixNano())
 	t.Cleanup(func() { db.Query(ctx, fmt.Sprintf(`{"drop":%q}`, name)) })
 	if _, err := db.Query(ctx, fmt.Sprintf(`{"insert":%q,"documents":[{"label":"kopi","n":7}]}`, name)); err != nil {
@@ -147,7 +147,7 @@ func TestMongoLoopback(t *testing.T) {
 }
 
 func TestRedisLoopback(t *testing.T) {
-	db, ctx := localNoSQLFixture(t, "redis", "NEXSSH_FIXTURE_REDIS_PORT")
+	db, ctx := localNoSQLFixture(t, "redis", "VEXSSH_FIXTURE_REDIS_PORT")
 	key := fmt.Sprintf("fixture:%d", time.Now().UnixNano())
 	t.Cleanup(func() { db.Query(ctx, fmt.Sprintf(`["DEL",%q]`, key)) })
 	if _, err := db.Query(ctx, fmt.Sprintf(`["HSET",%q,"warna","biru"]`, key)); err != nil {

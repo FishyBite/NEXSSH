@@ -347,6 +347,33 @@ fn default_config() -> Value {
 mod tests {
     use super::*;
     #[test]
+    fn opens_rc7_profile_and_preserves_its_pinned_fingerprint_and_ciphertext() {
+        let profile = tempfile::tempdir().unwrap();
+        let legacy = Connection::open(profile.path().join("nexssh.sqlite3")).unwrap();
+        legacy.execute_batch(r#"
+            CREATE TABLE configuration (id INTEGER PRIMARY KEY CHECK(id=1), data TEXT NOT NULL);
+            CREATE TABLE known_hosts (host_id TEXT PRIMARY KEY, hostname TEXT NOT NULL, port INTEGER NOT NULL, fingerprint TEXT NOT NULL);
+            CREATE TABLE secrets (id TEXT PRIMARY KEY, ciphertext BLOB NOT NULL);
+            INSERT INTO configuration VALUES (1, '{"hosts":[{"id":"router","hostname":"router.invalid","name":"Lab router"}]}');
+            INSERT INTO known_hosts VALUES ('router', 'router.invalid', 22, 'fixture-fingerprint');
+            INSERT INTO secrets VALUES ('host:router', X'01020304');
+        "#).unwrap();
+        drop(legacy);
+
+        let state = AppState::new(profile.path().to_path_buf()).unwrap();
+        assert_eq!(state.host("router").unwrap()["name"], "Lab router");
+        assert_eq!(
+            crate::security::known_fingerprint(&state, "router", "router.invalid", 22)
+                .unwrap().as_deref(),
+            Some("fixture-fingerprint")
+        );
+        let bytes: Vec<u8> = state.db().unwrap().query_row(
+            "SELECT ciphertext FROM secrets WHERE id='host:router'", [], |row| row.get(0)
+        ).unwrap();
+        assert_eq!(bytes, [1, 2, 3, 4]);
+    }
+
+    #[test]
     fn credentials_are_removed_recursively() {
         let mut config = json!({"hosts":[{"id":"1","password":"do-not-persist","nested":{"privateKey":"secret","keyId":"safe"}}],"passphrase":"secret"});
         strip_secrets(&mut config);

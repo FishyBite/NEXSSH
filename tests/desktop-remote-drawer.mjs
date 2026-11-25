@@ -147,7 +147,7 @@ export async function exerciseRemoteDrawer({ page, expect, fixture }) {
   if (!await drawer.isVisible()) await toggle.click();
   await expect(follow).toBeChecked();
   await expect(address).toHaveValue("/deploy");
-  if (process.env.NEXSSH_DRAWER_CAPTURE) await page.screenshot({path:process.env.NEXSSH_DRAWER_CAPTURE});
+  if (process.env.VEXSSH_DRAWER_CAPTURE) await page.screenshot({path:process.env.VEXSSH_DRAWER_CAPTURE});
   await page.setViewportSize({width:760,height:560});
   await expect(drawer).toBeInViewport();
   await expect(terminal(secondId).locator("xpath=ancestor::*[contains(@class,'terminal-pane')][1]")).toBeInViewport();

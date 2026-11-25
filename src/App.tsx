@@ -1187,14 +1187,14 @@ export default function App() {
           <div className="brand">
             <img
               className="brand-icon"
-              src="/nexssh.svg"
+              src="/vexssh.svg"
               width={32}
               height={32}
-              alt={collapsed ? "NEXSSH" : ""}
+              alt={collapsed ? "VEXSSH" : ""}
             />
             {!collapsed && (
               <span>
-                NEXSSH<small>Desktop workspace</small>
+                VEXSSH<small>Desktop workspace</small>
               </span>
             )}
           </div>
@@ -1624,7 +1624,7 @@ export default function App() {
               <ArrowDownUp size={13} />
               {runningTransfers} {runningTransfers === 1 ? "transfer" : "transfers"}
             </button>
-            <span>NEXSSH {appVersion}</span>
+            <span>VEXSSH {appVersion}</span>
           </footer>
         </div>
         <CommandPalette
@@ -1812,7 +1812,7 @@ export default function App() {
         />
         <Confirm
           open={closeApp}
-          title="Close NEXSSH?"
+          title="Close VEXSSH?"
           description={[
             editorDirty && "Unsaved file edits will be discarded.",
             queriesDirty && "Unsaved query edits will be discarded.",

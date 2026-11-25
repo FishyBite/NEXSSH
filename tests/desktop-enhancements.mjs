@@ -144,7 +144,7 @@ export async function exerciseEnhancements({ page, expect, fixture, paletteActio
   await paletteAction("Open settings");
   const categories = page.getByRole("navigation", { name: "Settings categories", exact: true });
   await categories.getByRole("button", { name: "General", exact: true }).click();
-  const restore = page.getByRole("checkbox", { name: "Restore tabs and layout when NEXSSH opens", exact: true });
+  const restore = page.getByRole("checkbox", { name: "Restore tabs and layout when VEXSSH opens", exact: true });
   await restore.uncheck();
   await page.getByRole("button", { name: "Save changes", exact: true }).click();
   await expect.poll(() => page.evaluate(() => localStorage.getItem("nexssh.workspace.v1"))).toBeNull();
@@ -163,8 +163,8 @@ export async function exerciseEnhancements({ page, expect, fixture, paletteActio
   assert(Math.abs(idleWidth - busyWidth) < 1, `Busy button changed width: ${idleWidth} -> ${busyWidth}`);
   await page.evaluate(() => { window.fixture.holdUpdatePrepare = false; window.fixture.releaseUpdatePrepare(); });
   await expect(updates.locator(".update-summary")).toContainText("is ready");
-  await updates.getByRole("button", { name: "Install when NEXSSH closes", exact: true }).click();
-  await expect(updates).toContainText("This update will install when you close NEXSSH");
+  await updates.getByRole("button", { name: "Install when VEXSSH closes", exact: true }).click();
+  await expect(updates).toContainText("This update will install when you close VEXSSH");
   await updates.getByRole("button", { name: "Cancel scheduled update", exact: true }).click();
   await expect(updates.locator(".update-summary")).toHaveCount(0);
   await page.evaluate(() => { window.fixture.updateError = "Fixture update package is invalid"; });

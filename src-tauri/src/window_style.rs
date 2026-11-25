@@ -185,7 +185,7 @@ fn present(app: &tauri::AppHandle, fallback: bool) -> Result<(), String> {
         if shown {
             startup.revealed.store(true, Ordering::Relaxed);
         } else if fallback {
-            crate::startup_error(&handle, "The application window could not be displayed. Close this message and reopen NEXSSH.".into());
+            crate::startup_error(&handle, "The application window could not be displayed. Close this message and reopen VEXSSH.".into());
         }
     })
     .map_err(|error| error.to_string())
@@ -312,7 +312,7 @@ mod tests {
             CreateWindowExW(
                 WINDOW_EX_STYLE::default(),
                 w!("STATIC"),
-                w!("NEXSSH isolated caption test"),
+                w!("VEXSSH isolated caption test"),
                 WS_OVERLAPPEDWINDOW,
                 0,
                 0,

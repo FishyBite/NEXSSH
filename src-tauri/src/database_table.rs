@@ -73,7 +73,7 @@ pub(super) fn csv_target(path: &Path, dbs: &[PathBuf]) -> Result<tempfile::Named
         }
     }
     tempfile::Builder::new()
-        .prefix(".nexssh-export-")
+        .prefix(".vexssh-export-")
         .tempfile_in(parent)
         .map_err(ioerr)
 }

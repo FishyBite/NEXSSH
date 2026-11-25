@@ -9,7 +9,7 @@
         "username": "fixture",
         "authMethod": "key",
         "keySource": "file",
-        "identityFile": "C:\\nexssh-test\\fixture-key",
+        "identityFile": "C:\\vexssh-test\\fixture-key",
         "workspaceId": "fixture-workspace",
         "tags": [],
         "color": "#6C8CFF",

@@ -245,8 +245,8 @@ function TerminalProfiles({
                 }
               >
                 <option value="">Use workspace colors</option>
-                <option value="dark">NEXSSH dark</option>
-                <option value="light">NEXSSH light</option>
+                <option value="dark">VEXSSH dark</option>
+                <option value="light">VEXSSH light</option>
                 <option value="solarized">Solarized</option>
               </select>
             </Field>
@@ -721,7 +721,7 @@ export function Snippets({
   const canExecute = executing && executing.sessionId === session?.id && canRunHere(executing.snippet);
   const exportSnippets = async () => {
     try {
-      const path = await saveDialog({ defaultPath: "nexssh-snippets.json" });
+      const path = await saveDialog({ defaultPath: "vexssh-snippets.json" });
       if (path) {
         await request("snippets_export", { path });
         notify("Snippets exported");
@@ -1085,8 +1085,8 @@ export function SettingsView({
         backup === "export"
           ? await saveDialog({
               defaultPath: password
-                ? "nexssh-backup.enc"
-                : "nexssh-config.json",
+                ? "vexssh-backup.enc"
+                : "vexssh-config.json",
             })
           : await open({ multiple: false });
       if (path) {
@@ -1238,8 +1238,8 @@ export function SettingsView({
                   }}
                 >
                   <option value="app">Follow app theme</option>
-                  <option value="dark">NEXSSH dark</option>
-                  <option value="light">NEXSSH light</option>
+                  <option value="dark">VEXSSH dark</option>
+                  <option value="light">VEXSSH light</option>
                   <option value="solarized">Solarized</option>
                 </select>
               </Field>
@@ -1430,7 +1430,7 @@ export function SettingsView({
               <h3>Workspace restoration</h3>
               <label className="checkbox-field">
                 <input type="checkbox" checked={draft.restoreWorkspace} onChange={(event) => set("restoreWorkspace", event.target.checked)} />
-                Restore tabs and layout when NEXSSH opens
+                Restore tabs and layout when VEXSSH opens
               </label>
               <p>Restored tabs wait for you to connect. Credentials, terminal output, and commands are not saved with the layout.</p>
               <h3>Configuration backup</h3>
@@ -1455,7 +1455,7 @@ export function SettingsView({
                   device.
                 </span>
               </div>
-              <h3>NEXSSH</h3>
+              <h3>VEXSSH</h3>
               <p>Version {appVersion} · Desktop SSH workspace</p>
             </>
           )}

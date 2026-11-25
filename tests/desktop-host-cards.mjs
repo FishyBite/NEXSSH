@@ -26,7 +26,7 @@ export async function exerciseHostCards({page, expect, fixture, nav, directory})
   await expect.poll(() => page.evaluate(() => document.documentElement.dataset.theme)).toBe("dark");
   let fit = await checkFit();
   assert(fit.fits && fit.body === fit.viewport && fit.content <= fit.main && fit.columns >= 2, JSON.stringify(fit));
-  if (directory) await page.screenshot({path:resolve(directory,"nexssh-hosts-dark.png"),animations:"disabled"});
+  if (directory) await page.screenshot({path:resolve(directory,"vexssh-hosts-dark.png"),animations:"disabled"});
 
   await open(second.name).focus();
   await page.keyboard.press("Tab");
@@ -70,7 +70,7 @@ export async function exerciseHostCards({page, expect, fixture, nav, directory})
   await page.evaluate(() => {document.querySelector(".sidebar").scrollTop=0; document.activeElement?.blur();});
   fit = await checkFit();
   assert(fit.fits && fit.body === fit.viewport && fit.content <= fit.main, JSON.stringify(fit));
-  if (directory) await page.screenshot({path:resolve(directory,"nexssh-hosts-light-narrow.png"),animations:"disabled"});
+  if (directory) await page.screenshot({path:resolve(directory,"vexssh-hosts-light-narrow.png"),animations:"disabled"});
   assert.equal(await attempts(), start);
   await open(second.name).press("Enter");
   await expect.poll(attempts).toBe(start + 1);

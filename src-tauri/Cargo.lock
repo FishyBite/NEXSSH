@@ -2372,35 +2372,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "650eef8c711430f1a879fdd01d4745a7deea475becfb90269c06775983bbf086"
 
 [[package]]
-name = "nexssh"
-version = "1.0.0-rc.7"
-dependencies = [
- "aes-gcm",
- "argon2",
- "base64 0.22.1",
- "clipboard-win",
- "ed25519-dalek",
- "keyring",
- "rand",
- "rusqlite",
- "semver",
- "serde",
- "serde_json",
- "serialport",
- "sha2",
- "ssh-key",
- "ssh2",
- "tauri",
- "tauri-build",
- "tauri-plugin-dialog",
- "tempfile",
- "tokio",
- "uuid",
- "windows",
- "zip",
-]
-
-[[package]]
 name = "nix"
 version = "0.26.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4849,6 +4820,35 @@ name = "version_check"
 version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
+
+[[package]]
+name = "vexssh"
+version = "1.0.0-rc.8"
+dependencies = [
+ "aes-gcm",
+ "argon2",
+ "base64 0.22.1",
+ "clipboard-win",
+ "ed25519-dalek",
+ "keyring",
+ "rand",
+ "rusqlite",
+ "semver",
+ "serde",
+ "serde_json",
+ "serialport",
+ "sha2",
+ "ssh-key",
+ "ssh2",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+ "tempfile",
+ "tokio",
+ "uuid",
+ "windows",
+ "zip",
+]
 
 [[package]]
 name = "vswhom"

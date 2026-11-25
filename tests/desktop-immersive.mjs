@@ -35,13 +35,13 @@ export async function exerciseImmersive({page, expect, fixture}) {
   const id = await pane.getAttribute("data-session-id");
   const box = await pane.boundingBox();
   assert(box.width >= page.viewportSize().width - 4);
-  if (process.env.NEXSSH_IMMERSIVE_CAPTURE) {
-    const directory = process.env.NEXSSH_IMMERSIVE_CAPTURE;
-    await page.screenshot({path:resolve(directory,"nexssh-ssh-focus.png")});
+  if (process.env.VEXSSH_IMMERSIVE_CAPTURE) {
+    const directory = process.env.VEXSSH_IMMERSIVE_CAPTURE;
+    await page.screenshot({path:resolve(directory,"vexssh-ssh-focus.png")});
     await trigger.click();
     await expect(button("Terminal",page.locator(".sidebar"))).toBeFocused();
     await page.locator(".sidebar").evaluate(el => Promise.all(el.getAnimations().map(a => a.finished)));
-    await page.screenshot({path:resolve(directory,"nexssh-sidebar-open.png")});
+    await page.screenshot({path:resolve(directory,"vexssh-sidebar-open.png")});
     await trigger.click();
   }
   const closeAndType = async (close) => {

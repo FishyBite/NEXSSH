@@ -239,7 +239,7 @@ func openSQL(ctx context.Context, p Profile) (Database, error) {
 	if p.Engine == "mysql" || p.Engine == "mariadb" {
 		// A thread number alone is ambiguous on clustered endpoints. The
 		// connection-scoped marker proves a control socket reached this server.
-		key := "nexssh-query-" + rand.Text()
+		key := "vexssh-query-" + rand.Text()
 		var locked int
 		if err := conn.QueryRowContext(ctx, "SELECT CONNECTION_ID(), GET_LOCK(?,0)", key).Scan(&session.mysqlThreadID, &locked); err == nil && locked == 1 {
 			session.mysqlCancelKey = key

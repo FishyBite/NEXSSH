@@ -313,7 +313,7 @@ pub fn dispatch(state: &AppState, action: &str, payload: Value) -> Result<Value,
                     serde_json::from_slice(&decrypt(&key, &data)?).map_err(|e| e.to_string())?;
             }
             if envelope["format"] != "nexssh-config" || envelope["version"] != 1 {
-                return Err("Unsupported NEXSSH backup format".into());
+                return Err("Unsupported backup format".into());
             }
             state.save_config(envelope["config"].clone())?;
             state.config()
@@ -495,7 +495,7 @@ mod tests {
     #[test]
     fn import_and_inspection_share_format_diagnostics() {
         let directory =
-            std::env::temp_dir().join(format!("nexssh-import-errors-{}", uuid::Uuid::new_v4()));
+            std::env::temp_dir().join(format!("vexssh-import-errors-{}", uuid::Uuid::new_v4()));
         let state = AppState::new(directory.clone()).unwrap();
         let path = directory.join("selected-key");
         for bytes in [
