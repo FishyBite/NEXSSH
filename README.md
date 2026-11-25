@@ -10,15 +10,6 @@
 
 VEXSSH is a Windows app for working with servers and serial devices. Open a saved host, switch to SFTP to move or edit files, then return to the same shell.
 
-## Terminal to SFTP
-
-Type ls -la in the terminal, click SFTP to browse the host's files, then return to the same SSH session. The demo uses a sample Ubuntu connection.
-
-![VEXSSH switches from the Ubuntu terminal to the two-pane SFTP file manager and back to the same terminal](docs/vexssh-terminal-to-sftp.gif)
-
-[Play the GIF directly](https://raw.githubusercontent.com/FishyBite/VEXSSH/main/docs/vexssh-terminal-to-sftp.gif) if GitHub pauses the animation.
-
-
 ## Preview
 
 Screenshots from RC8 with sample connections.
