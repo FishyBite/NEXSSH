@@ -16,6 +16,8 @@ Type ls -la in the terminal, click SFTP to browse the host's files, then return 
 
 ![VEXSSH switches from the Ubuntu terminal to the two-pane SFTP file manager and back to the same terminal](docs/vexssh-terminal-to-sftp.gif)
 
+[Play the GIF directly](https://raw.githubusercontent.com/FishyBite/VEXSSH/main/docs/vexssh-terminal-to-sftp.gif) if GitHub pauses the animation.
+
 
 ## Preview
 
