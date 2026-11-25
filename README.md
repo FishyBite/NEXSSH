@@ -13,11 +13,11 @@ It keeps a shell and the files you’re working on in the same window. Open a sa
 
 ## Download
 
-Get the Windows x64 installer or portable executable from [GitHub Releases](../../releases).
+Get the Windows x64 installer or portable executable from [VEXSSH Releases](../../releases).
 
-## Upgrading from NEXSSH RC7
+## Upgrading to VEXSSH from RC7
 
-Close RC7 before running VEXSSH Setup under the same Windows account. Setup updates the existing installation in place. VEXSSH uses the existing host profiles, vault, and workspace settings. The installed executable keeps its original filename so existing taskbar pins can still launch it.
+Close RC7 before running VEXSSH Setup under the same Windows account. Setup updates the existing installation in place. VEXSSH uses the existing host profiles, vault, and workspace settings. VEXSSH keeps the original application ID, installation path, and storage identifiers for compatibility with existing taskbar pins, profiles, encrypted backups, and pending transfers.
 
 ## Run on Windows
 
