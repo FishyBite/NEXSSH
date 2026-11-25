@@ -50,6 +50,8 @@ It keeps a shell and the files you’re working on in the same window. Open a sa
 
 Get the Windows x64 installer or portable executable from [VEXSSH Releases](../../releases).
 
+**Older versions:** [RC7](../../releases/tag/v1.0.0-rc.7).
+
 ## Application data
 
 New builds use separate VEXSSH installation and storage identifiers. Existing RC7 and RC8 data stays in its original location. Keep a copy of your existing build if you need to open its data or backups.
