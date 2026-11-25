@@ -10,6 +10,13 @@ VEXSSH is a Windows desktop app for SSH, remote file transfers, serial consoles,
 
 It keeps a shell and the files you’re working on in the same window. Open a saved host, switch to SFTP to move or edit a file, and switch back to the same shell.
 
+## Preview
+
+![VEXSSH Hosts view in dark mode, showing five sample connections and the workspace sidebar](docs/vexssh-workspace.png)
+
+*Hosts view with sample connections.*
+
+
 ## What it does
 
 - **SSH** with saved hosts, tabs, split panes, and server fingerprint verification. Sign in with a password, an OpenSSH private key, or an SSH agent.
@@ -49,4 +56,6 @@ npm run tauri -- build --no-bundle
 
 The executable is written to `src-tauri/target/release/vexssh.exe`. The frontend uses React and TypeScript. Tauri and Rust handle the desktop app, and a Go helper provides database drivers.
 
+## Credits
 
+Created by [FishyBite](https://github.com/FishyBite).
