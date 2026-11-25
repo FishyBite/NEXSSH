@@ -6,20 +6,38 @@
 
 <p align="center">SSH · SFTP/SCP · Serial · Databases</p>
 
+<p align="center"><a href="#preview">Screenshots</a> · <a href="#download">Download</a></p>
+
 VEXSSH is a Windows desktop app for SSH, remote file transfers, serial consoles, and database connections.
 
 It keeps a shell and the files you’re working on in the same window. Open a saved host, switch to SFTP to move or edit a file, and switch back to the same shell.
 
 ## Preview
 
+### Saved hosts
+
 ![VEXSSH Hosts view in dark mode, showing five sample connections and the workspace sidebar](docs/vexssh-workspace.png)
 
 *Hosts view with sample connections for Ubuntu Server, Debian Server, Raspberry Pi, Proxmox, and Home Assistant.*
+
+### SSH terminal
+
+![VEXSSH terminal connected to a sample Ubuntu server](docs/vexssh-terminal.png)
+
+### SFTP file manager
+
+![VEXSSH file manager with local files on the left and files on the Ubuntu server on the right](docs/vexssh-sftp.png)
+
+### Databases
 
 ![VEXSSH Databases view showing a SQLite connection, three tables, a SQL query, and four result rows](docs/vexssh-databases.png)
 
 *Database workspace with a sample SQLite inventory, a SQL query, and its results.*
 
+
+### Serial console
+
+![VEXSSH serial console displaying demo router output on COM7 at 115200 bps](docs/vexssh-serial.png)
 
 ## What it does
 
