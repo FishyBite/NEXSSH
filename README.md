@@ -1,4 +1,10 @@
-# VEXSSH
+<p align="center">
+  <img src="public/vexssh.svg" alt="VEXSSH logo" width="96" height="96">
+</p>
+
+<h1 align="center">VEXSSH</h1>
+
+<p align="center">SSH · SFTP/SCP · Serial · Databases</p>
 
 VEXSSH is a Windows desktop app for SSH, remote file transfers, serial consoles, and database connections.
 
