@@ -1194,7 +1194,7 @@ export default function App() {
             />
             {!collapsed && (
               <span>
-                VEXSSH<small>Desktop workspace</small>
+                VEXSSH
               </span>
             )}
           </div>

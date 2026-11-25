@@ -8,9 +8,11 @@
 
 <p align="center"><a href="#preview">Screenshots</a> · <a href="#download">Download</a></p>
 
-Open a saved host, switch to SFTP to move or edit a file, then return to the same shell. VEXSSH runs on Windows.
+VEXSSH is a Windows app for working with servers and serial devices. Open a saved host, switch to SFTP to move or edit files, then return to the same shell.
 
 ## Preview
+
+Screenshots from RC8 with sample connections.
 
 ### Saved hosts
 
@@ -45,7 +47,7 @@ Open a saved host, switch to SFTP to move or edit a file, then return to the sam
 
 ## Download
 
-Get the Windows x64 installer or portable executable from [VEXSSH Releases](../../releases).
+For Windows x64, use [Online Setup or Portable from the RC8 release](../../releases/tag/v1.0.0-rc.8).
 
 **Older versions:** [RC7](../../releases/tag/v1.0.0-rc.7).
 
