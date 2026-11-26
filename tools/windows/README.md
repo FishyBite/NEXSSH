@@ -48,3 +48,7 @@ Get-FileHash -LiteralPath $portable, $setup -Algorithm SHA256
 ```
 
 Inno uses the named signing tool for Setup and its uninstaller. Test the installer in a clean Windows account with its normal trust store. Run the same publisher and timestamp check on the installed app and `unins000.exe`. Confirm the installed app's SHA-256 matches the portable file, then publish the two verified files. [Inno Setup signing](https://jrsoftware.org/inno-setup/documentation/topic_setup_signtool.htm) · [Signed uninstaller](https://jrsoftware.org/inno-setup/documentation/topic_setup_signeduninstaller.htm)
+
+## Release notes
+
+Start the GitHub release description with `## What's changed` and a short list of changes users will notice. Put installation or verification details under a separate heading. Publishing or editing the release refreshes its section on the Windows downloads page.

@@ -2,6 +2,7 @@
 import json
 import os
 import re
+from datetime import date
 from pathlib import Path
 from urllib.parse import quote
 from urllib.request import Request, urlopen
@@ -33,36 +34,63 @@ def load_releases():
         page += 1
 
 
+def download_links(release):
+    tag = release["tag_name"]
+    files = {a["name"] for a in release["assets"] if a["state"] == "uploaded"}
+    base = f"https://github.com/{REPO}/releases/download/{tag}"
+    links = []
+    for suffix, label in [("Online-Setup.exe", "Installer"), ("Portable.exe", "Portable")]:
+        for brand in ("VEXSSH", "NEXSSH"):
+            name = f"{brand}-{tag[1:]}-Windows-x64-{suffix}"
+            if name in files:
+                links.append(f"[{label}]({base}/{quote(name)})")
+                break
+    if links and "SHA256SUMS.txt" in files:
+        links.append(f"[SHA-256]({base}/SHA256SUMS.txt)")
+    return links
+
+
+def change_notes(body):
+    """Read the release author's highlights, including GitHub-generated release notes."""
+    body = (body or "").replace("\r\n", "\n").strip()
+    heading = re.search(r"^(#{1,6})[ \t]+(?:what['’]s (?:changed|new)|changes|highlights)[ \t]*$",
+                        body, flags=re.IGNORECASE | re.MULTILINE)
+    if heading:
+        body = body[heading.end():].strip()
+        next_heading = re.search(r"^#{1," + str(len(heading[1])) + r"}[ \t]+", body, flags=re.MULTILINE)
+        if next_heading:
+            body = body[:next_heading.start()]
+    # Full release notes are linked after the downloads; keep section headings local to this version.
+    body = re.sub(r"^\*\*Full Changelog\*\*:.*$", "", body, flags=re.IGNORECASE | re.MULTILINE)
+    return re.sub(r"^#{1,6}[ \t]+(.+?)[ \t]*$", r"**\1**", body.strip(), flags=re.MULTILINE)
+
+
 def render(releases):
-    rows = []
+    versions = []
     for release in releases:
-        tag = release["tag_name"]
-        version = VERSION.fullmatch(tag)
-        if release["draft"] or not version:
-            continue
-        files = {a["name"] for a in release["assets"] if a["state"] == "uploaded"}
-        base = f"https://github.com/{REPO}/releases"
-        def link(name, label):
-            return f"[{label}]({base}/download/{tag}/{quote(name)})"
-        links = []
-        for suffix, label in [("Online-Setup.exe", "Installer"), ("Portable.exe", "Portable")]:
-            candidates = [f"{brand}-{tag[1:]}-Windows-x64-{suffix}" for brand in ("VEXSSH", "NEXSSH")]
-            name = next((candidate for candidate in candidates if candidate in files), None)
-            links.append(link(name, label) if name else "—")
-        if links == ["—", "—"]:
-            continue
-        checksums = link("SHA256SUMS.txt", "SHA-256") if "SHA256SUMS.txt" in files else "—"
-        rows.append((version_order(version), f"| [{tag[1:]}]({base}/tag/{tag}) | {links[0]} | {links[1]} | {checksums} |"))
-    rows.sort(reverse=True)
+        version = VERSION.fullmatch(release["tag_name"])
+        if version and not release["draft"] and (links := download_links(release)):
+            versions.append((version_order(version), release, links))
+    versions.sort(key=lambda entry: entry[0], reverse=True)
     lines = [
         "# VEXSSH downloads", "",
-        "Windows x64 releases, newest first. Versions marked `rc` are release candidates.", "",
-        "Choose **Installer** to install or update VEXSSH and download WebView2 if needed. "
-        "Choose **Portable** to run it directly on a PC that already has WebView2.", "",
-        "| Version and release notes | Install | Run without installing | Checksums |",
-        "| --- | --- | --- | --- |",
+        "Choose **Installer** to install or update VEXSSH on Windows x64. "
+        "Choose **Portable** to run it directly with WebView2 already installed. "
+        "Versions marked `rc` are release candidates.",
     ]
-    return "\n".join(lines + [row for _, row in rows]) + "\n"
+    for index, (_, release, links) in enumerate(versions):
+        tag = release["tag_name"]
+        published = date.fromisoformat(release["published_at"][:10])
+        heading = f"## {tag[1:]}" + (" · Latest download" if index == 0 else "")
+        notes = change_notes(release.get("body"))
+        if not notes:
+            notes = "The publisher did not provide change notes for this release."
+            if index + 1 < len(versions):
+                previous = versions[index + 1][1]["tag_name"]
+                notes += f" [Compare with {previous[1:]}](https://github.com/{REPO}/compare/{previous}...{tag})."
+        links.append(f"[Full release notes](https://github.com/{REPO}/releases/tag/{tag})")
+        lines.extend(["", heading, "", published.strftime("%d %B %Y"), "", notes, "", " · ".join(links)])
+    return "\n".join(lines) + "\n"
 
 
 if __name__ == "__main__":

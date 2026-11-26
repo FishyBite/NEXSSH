@@ -65,7 +65,7 @@ Use the color picker or enter a hex value to change ordinary terminal text. Prog
 
 ## Download
 
-Use **Download for Windows** at the top of this page to see the release history. Choose an installer or portable executable from the first row for the newest version, or scroll down for an older one.
+Use **Download for Windows** at the top of this page. Each version lists its changes and Windows downloads together, with the newest version first.
 
 - **Online Setup** installs or upgrades VEXSSH, creates a desktop shortcut, and downloads WebView2 if needed.
 - **Portable** runs directly on a computer that already has WebView2.
