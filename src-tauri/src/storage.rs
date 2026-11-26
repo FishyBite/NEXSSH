@@ -87,7 +87,7 @@ impl AppState {
         self.inner.directory.clone()
     }
     pub fn db(&self) -> Result<Connection, String> {
-        let db = Connection::open(self.inner.directory.join("vexssh.sqlite3"))
+        let db = Connection::open(self.inner.directory.join("nexssh.sqlite3"))
             .map_err(|e| e.to_string())?;
         db.busy_timeout(std::time::Duration::from_secs(10))
             .map_err(|e| e.to_string())?;
@@ -186,7 +186,7 @@ impl AppState {
         Ok(())
     }
     pub fn open_bound_session(&self, binding: &SessionBinding) -> Result<ssh2::Session, String> {
-        // Hold this lock through authentication to keep the verified route stable.
+        // Profile and trust changes share this lock until SSH authenticates, so the validated route cannot change during a new connection.
         let _guard = self.inner.config_lock.lock().map_err(|e| e.to_string())?;
         self.check_binding(binding)?;
         self.open_session(&binding.host_id)
@@ -355,9 +355,9 @@ fn default_config() -> Value {
 mod tests {
     use super::*;
     #[test]
-    fn opens_existing_profile_and_preserves_its_pinned_fingerprint_and_ciphertext() {
+    fn opens_rc7_profile_and_preserves_its_pinned_fingerprint_and_ciphertext() {
         let profile = tempfile::tempdir().unwrap();
-        let legacy = Connection::open(profile.path().join("vexssh.sqlite3")).unwrap();
+        let legacy = Connection::open(profile.path().join("nexssh.sqlite3")).unwrap();
         legacy.execute_batch(r#"
             CREATE TABLE configuration (id INTEGER PRIMARY KEY CHECK(id=1), data TEXT NOT NULL);
             CREATE TABLE known_hosts (host_id TEXT PRIMARY KEY, hostname TEXT NOT NULL, port INTEGER NOT NULL, fingerprint TEXT NOT NULL);

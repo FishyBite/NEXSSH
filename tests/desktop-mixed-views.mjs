@@ -46,7 +46,7 @@ export async function exerciseMixedViews({ page, expect, fixture, nav }) {
   await page.mouse.move(panes.x + .69 * panes.width, start.y + start.height / 2, { steps: 10 });
   await page.mouse.up();
   await expect(divider).toHaveAttribute("aria-valuenow","69");
-  await expect.poll(() => page.evaluate(() => Math.round(JSON.parse(localStorage.getItem("vexssh.terminal.layout.v1")).ratio))).toBe(69);
+  await expect.poll(() => page.evaluate(() => Math.round(JSON.parse(localStorage.getItem("nexssh.terminal.layout.v1")).ratio))).toBe(69);
   await divider.dblclick();
   await expect(divider).toHaveAttribute("aria-valuenow","50");
   await mode(b, "Files");

@@ -89,7 +89,7 @@ export async function exerciseImmersive({page, expect, fixture}) {
   assert.deepEqual(await page.evaluate(() => [...window.fixture.sessions.keys()]),[id]);
   const focusId = () => pane.getAttribute("data-session-id");
   const writes = () => page.evaluate(() => window.fixture.calls.filter(c => c.args?.action === "ssh_write").length);
-  const tabId = await page.evaluate(() => JSON.parse(localStorage.getItem("vexssh.workspace.v1")).activeTabId);
+  const tabId = await page.evaluate(() => JSON.parse(localStorage.getItem("nexssh.workspace.v1")).activeTabId);
   await page.locator(`.session-tab[data-session-id="${id}"] .session-tab-menu`).click();
   await page.getByRole("menuitem",{name:"Duplicate connection"}).click();
   await expect.poll(focusId).not.toBe(id);
@@ -128,7 +128,7 @@ export async function exerciseImmersive({page, expect, fixture}) {
   await expect.poll(focusId).not.toBe(nextId);
   const recoveredId = await focusId();
   assert.deepEqual(new Set(await page.evaluate(() => [...window.fixture.sessions.keys()])), new Set([peerId,recoveredId]));
-  assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("vexssh.workspace.v1")).activeTabId),tabId);
+  assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("nexssh.workspace.v1")).activeTabId),tabId);
   await expect(trigger).toHaveAttribute("aria-expanded","false");
   assert.equal(await writes(),before);
   await page.evaluate(({id,tabId,hostId}) => {

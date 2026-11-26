@@ -130,6 +130,7 @@ pub fn run() {
                 .and_then(|directory| {
                     #[cfg(debug_assertions)]
                     let directory = std::env::var_os("VEXSSH_TEST_DATA_DIR")
+                        .or_else(|| std::env::var_os("NEXSSH_TEST_DATA_DIR"))
                         .map(std::path::PathBuf::from)
                         .unwrap_or(directory);
                     AppState::new(directory)
