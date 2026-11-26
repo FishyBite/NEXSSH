@@ -4,7 +4,16 @@
 
 Choose **Installer** to install or update VEXSSH on Windows x64. Choose **Portable** to run it directly with WebView2 already installed. Versions marked `rc` are release candidates.
 
-## 1.0.0-rc.12 · Latest download
+## 1.1.0 · Latest download
+
+26 November 2026
+
+- Copy files and folders between two connected SSH hosts in the SFTP file manager. Choose a host in each pane and drag the selection in either direction or use the copy button.
+- The transfer queue identifies both endpoints. Data streams through the computer running VEXSSH. Keep the application and both SSH connections open until the transfer completes.
+
+[Installer](https://github.com/FishyBite/VEXSSH/releases/download/v1.1.0/VEXSSH-1.1.0-Windows-x64-Online-Setup.exe) · [Portable](https://github.com/FishyBite/VEXSSH/releases/download/v1.1.0/VEXSSH-1.1.0-Windows-x64-Portable.exe) · [SHA-256](https://github.com/FishyBite/VEXSSH/releases/download/v1.1.0/SHA256SUMS.txt) · [Full release notes](https://github.com/FishyBite/VEXSSH/releases/tag/v1.1.0)
+
+## 1.0.0-rc.12
 
 26 November 2026
 
