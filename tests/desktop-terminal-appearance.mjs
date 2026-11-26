@@ -41,7 +41,7 @@ export async function exerciseTerminalAppearance({page, expect, fixture, nav}) {
   await nav("Serial").click();
   await button("New serial session").click();
   const dialog = page.getByRole("dialog");
-  await field("Serial port", dialog).selectOption({label:"COM7"});
+  await field("Serial port", dialog).selectOption("port:COM7");
   await button("Connect", dialog).click();
   await expect(serial.getByRole("status")).toHaveText("Connected");
   await page.evaluate(sample => fixture.emit("serial-data", {id:fixture.serialPort, data:btoa(sample)}), sample);

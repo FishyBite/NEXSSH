@@ -25,7 +25,7 @@ export default function SerialConsole({
   profile: SerialProfile;
   visible: boolean;
   settings: Settings;
-  appearance: "light" | "dark";
+  appearance: Settings["terminalTheme"];
 }) {
   const mount = useRef<HTMLDivElement>(null);
   const terminal = useRef<Terminal | null>(null);

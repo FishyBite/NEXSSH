@@ -8,6 +8,24 @@ export async function exerciseSerial({page, expect}) {
   const port = form.getByLabel("Serial port",{exact:true});
   const speed = form.getByLabel("Speed (bps)",{exact:true});
   await expect(port.locator("option")).toHaveText(["Choose at connect", "COM7", "COM9", "Enter manually…"]);
+  await expect(port).toHaveValue("");
+  const updatePorts = async (names) => page.evaluate(items => {
+    window.fixture.detectedPorts = [
+      {name:"COM7",kind:"Serial"}, {name:"COM9",kind:"Serial"},
+      ...items.map(name => ({name,kind:"USB",manufacturer:"Adapter maker",product:"Lab UART ("+name+")",usbId:"0403:6001"})),
+    ];
+  }, names);
+  await updatePorts(["COM12"]);
+  await expect(port).toHaveValue("port:COM12", {timeout:8000});
+  await expect(port.locator("option:checked")).toHaveText("COM12 · Lab UART · Adapter maker · 0403:6001 (just connected)");
+  await updatePorts(["COM12","COM13"]);
+  await expect(port).toHaveValue("", {timeout:8000});
+  await expect(form.getByRole("status")).toContainText("Multiple ports");
+  await port.selectOption("port:COM12");
+  await updatePorts([]);
+  await expect(port.locator("option:checked")).toHaveText("COM12 (not listed)", {timeout:8000});
+  await expect(form.getByRole("status")).toContainText("not currently detected");
+  await expect.poll(() => page.evaluate(() => window.fixture.serialOpens ?? 0)).toBe(0);
   await expect(speed).toHaveValue("9600");
   await port.selectOption({label:"Enter manually…"});
   await form.getByLabel("Port name",{exact:true}).fill("com27");
@@ -30,6 +48,10 @@ export async function exerciseSerial({page, expect}) {
   await expect(pane.getByRole("status")).toHaveText("Connected");
   const input=pane.locator(".xterm-helper-textarea");
   await expect(input).toBeFocused();
+  await button("New serial session").click();
+  await expect(form.getByLabel("Serial port",{exact:true}).locator('option[value="port:COM7"]')).toBeDisabled({timeout:8000});
+  await button("Cancel", form).click();
+  await input.focus();
   await page.keyboard.type("hello");
   await page.keyboard.press("Enter");
   await expect.poll(()=>page.evaluate(()=>window.fixture.serialOutput)).toBe("hello\r\n");

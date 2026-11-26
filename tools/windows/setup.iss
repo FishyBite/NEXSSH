@@ -1,5 +1,13 @@
 ; Offline: ISCC /DWebViewInstaller=<signed x64 Evergreen standalone installer> setup.iss
 ; Online:  ISCC /DOnlineSetup=1 /DWebViewInstaller=<signed Evergreen bootstrapper> setup.iss
+#ifdef SignedRelease
+  #ifndef AppBinary
+    #error A signed release requires an explicit signed, staged AppBinary.
+  #endif
+  #define AppSignatureFlag "signcheck"
+#else
+  #define AppSignatureFlag ""
+#endif
 #ifndef AppBinary
   #define AppBinary SourcePath + "..\..\src-tauri\target\release\vexssh.exe"
 #endif
@@ -20,6 +28,10 @@
 #endif
 
 [Setup]
+#ifdef SignedRelease
+SignTool=VexsshPublisher
+SignedUninstaller=yes
+#endif
 AppId=com.vexssh.desktop
 AppName=VEXSSH
 AppVersion={#AppVersion}
@@ -46,7 +58,7 @@ RestartApplications=no
 
 [Files]
 Source: "{#WebViewInstaller}"; DestName: "{#RuntimeFile}"; Flags: dontcopy nocompression
-Source: "{#AppBinary}"; DestDir: "{app}"; DestName: "VEXSSH.exe"; Flags: replacesameversion
+Source: "{#AppBinary}"; DestDir: "{app}"; DestName: "VEXSSH.exe"; Flags: replacesameversion {#AppSignatureFlag}
 Source: "..\dbbridge\THIRD-PARTY-NOTICES.txt"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]

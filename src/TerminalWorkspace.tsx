@@ -117,6 +117,8 @@ type SessionPatch = Pick<
 >;
 interface Props {
   immersive: boolean;
+  windowFullscreen: boolean;
+  fullscreenButton: React.ReactNode;
   sidebarOpen: boolean;
   sidebarTrigger: RefObject<HTMLButtonElement | null>;
   onSidebar: () => void;
@@ -127,7 +129,7 @@ interface Props {
   active: string;
   setActive: (s: string) => void;
   config: Config;
-  appearance: "dark" | "light";
+  appearance: Config["settings"]["terminalTheme"];
   onDisconnect: (id: string) => void;
   onReconnect: (id: string) => void;
   onNew: () => void;
@@ -182,7 +184,7 @@ export function readLayout(restoreWorkspace: boolean) {
 }
 
 export function TerminalWorkspace({
-  immersive, sidebarOpen, sidebarTrigger, onSidebar,
+  immersive, sidebarOpen, sidebarTrigger, onSidebar, windowFullscreen, fullscreenButton,
   layout, setLayout, openPaneView,
   sessions,
   active,
@@ -458,7 +460,7 @@ export function TerminalWorkspace({
     } catch {}
   }, [layout, config.settings.restoreWorkspace]);
   useEffect(() => {
-    if (!visible && !(mixed && workspaceShown) && !immersive) return;
+    if (windowFullscreen || (!visible && !(mixed && workspaceShown) && !immersive)) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Enter" || !event.ctrlKey || !event.shiftKey || protectsKeyboardInput(event)) return;
       event.preventDefault();
@@ -467,7 +469,7 @@ export function TerminalWorkspace({
     };
     window.addEventListener("keydown", onKeyDown, true);
     return () => window.removeEventListener("keydown", onKeyDown, true);
-  }, [visible, mixed, workspaceShown, immersive, toggleFullscreen]);
+  }, [visible, mixed, workspaceShown, immersive, windowFullscreen, toggleFullscreen]);
   return (
     <div
       className={`terminal-workspace ${workspaceShown ? "is-visible" : ""} ${!mixed && (filesVisible || databaseVisible) ? "files-mode" : ""}`}
@@ -675,7 +677,7 @@ export function TerminalWorkspace({
             {immersive && focused && (visible || mixed) && <Button variant="ghost" className="session-tools-trigger"
               aria-label="Terminal tools" title="Terminal tools" aria-controls="terminal-tools-row" aria-expanded={toolsOpen}
               onClick={() => setToolsOpen(value => !value)}><SlidersHorizontal size={16}/></Button>}
-            <Button
+            {!windowFullscreen && <Button
               variant="ghost"
               onClick={toggleFullscreen}
               title="Toggle expanded terminal (Ctrl+Shift+Enter)"
@@ -685,9 +687,10 @@ export function TerminalWorkspace({
             >
               {fullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
               <span>{fullscreen ? "Restore layout" : "Expand terminal"}</span>
-            </Button>
+            </Button>}
           </div>
         )}
+        {workspaceShown && fullscreenButton}
       </div>
       <span id="terminal-tab-reorder-help" className="sr-only">
         Drag tabs along the strip to reorder. Drop a connected tab on the left or right of the terminal to split it.

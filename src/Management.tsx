@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { open, save as saveDialog } from "@tauri-apps/plugin-dialog";
 import {
   Plus,
@@ -14,6 +14,8 @@ import {
   Settings2,
   ShieldCheck,
   RefreshCw,
+  Check,
+  ArrowRight,
   Save,
 } from "lucide-react";
 import type {
@@ -25,6 +27,7 @@ import type {
   TerminalProfile,
 } from "./types";
 import { message, uid } from "./types";
+import { appThemes, appThemeOptions, type AppTheme } from "./appThemes";
 import { getTerminalTheme, validTerminalForeground } from "./terminalThemes";
 import { terminalFontFamilies, TerminalPaletteOptions, TerminalPreview, TerminalTextColor } from "./TerminalAppearance";
 import type { IdentityInspection } from "./authentication";
@@ -53,7 +56,7 @@ function TerminalProfiles({
   notify,
 }: {
   config: Config;
-  appearance: "light" | "dark";
+  appearance: Exclude<AppTheme, "system">;
   save: (config: Config) => Promise<void>;
   notify: Notify;
 }) {
@@ -1049,16 +1052,24 @@ export function SettingsView({
   reload,
 }: {
   config: Config;
-  appearance: "light" | "dark";
+  appearance: Exclude<AppTheme, "system">;
   save: (c: Config) => Promise<void>;
   notify: Notify;
   reload: () => Promise<void>;
 }) {
   const [tab, setTab] = useState("Appearance");
+  const terminalCategory = useRef<HTMLButtonElement>(null);
   const [changes, setChanges] = useState<Partial<Settings>>({});
   const draft = { ...config.settings, ...changes };
-  const previewPalette = draft.followAppTheme
-    ? (draft.theme === "system" ? appearance : draft.theme) : draft.terminalTheme;
+  let previewPalette = draft.terminalTheme;
+  if (draft.followAppTheme) {
+    previewPalette = appearance;
+    if (draft.theme !== config.settings.theme) {
+      previewPalette = draft.theme === "system"
+        ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+        : draft.theme;
+    }
+  }
   const palette = getTerminalTheme(previewPalette);
   const previewColors = getTerminalTheme(previewPalette, draft.terminalForeground);
   const invalidForeground = !!draft.terminalForeground && !validTerminalForeground(draft.terminalForeground);
@@ -1162,7 +1173,9 @@ export function SettingsView({
           ].map((x) => (
             <button
               key={x}
+              ref={x === "Terminal" ? terminalCategory : undefined}
               className={tab === x ? "active" : ""}
+              aria-current={tab === x ? "page" : undefined}
               onClick={() => setTab(x)}
             >
               {x}
@@ -1173,31 +1186,43 @@ export function SettingsView({
           <h2>{tab}</h2>
           {tab === "Appearance" && (
             <>
-              <div className="theme-options">
-                {(["dark", "light", "system"] as const).map((t) => (
+              <div className="theme-options" role="group" aria-label="Application theme">
+                {appThemeOptions.map((theme) => (
                   <button
-                    key={t}
-                    className={`theme-option ${draft.theme === t ? "selected" : ""}`}
-                    aria-pressed={draft.theme === t}
-                    onClick={() => set("theme", t)}
+                    key={theme}
+                    type="button"
+                    className={`theme-option ${draft.theme === theme ? "selected" : ""}`}
+                    aria-pressed={draft.theme === theme}
+                    onClick={() => set("theme", theme)}
                   >
-                    <span className={`theme-swatch ${t}`}>
+                    <span className={`theme-swatch ${theme}`} data-app-theme={theme} aria-hidden="true">
                       <i />
                       <i />
                       <i />
                     </span>
-                    {t[0].toUpperCase() + t.slice(1)}
+                    <span className="theme-option-label">
+                      {appThemes[theme].label}
+                      {draft.theme === theme && <Check size={13} aria-hidden="true" />}
+                    </span>
                   </button>
                 ))}
               </div>
-              <label className="checkbox-field">
-                <input
-                  type="checkbox"
-                  checked={draft.sidebarCollapsed}
-                  onChange={(e) => set("sidebarCollapsed", e.target.checked)}
-                />
-                Compact sidebar
-              </label>
+              <div className="appearance-controls">
+                <label className="checkbox-field">
+                  <input
+                    type="checkbox"
+                    checked={draft.sidebarCollapsed}
+                    onChange={(e) => set("sidebarCollapsed", e.target.checked)}
+                  />
+                  Compact sidebar
+                </label>
+                <button type="button" className="text-button" onClick={() => {
+                  setTab("Terminal");
+                  terminalCategory.current?.focus();
+                }}>
+                  Terminal colors and fonts <ArrowRight size={14} aria-hidden="true" />
+                </button>
+              </div>
             </>
           )}
           {tab === "Terminal" && (
@@ -1420,6 +1445,7 @@ export function SettingsView({
                 ["Previous terminal", "Ctrl + Shift + Tab"],
                 ["Switch to last used tab", "Ctrl + Shift + Space"],
                 ["Search terminal", "Ctrl + Shift + F"],
+                ["Toggle window full screen", "F11"],
                 ["Command palette", "Ctrl + Shift + P"],
               ].map(([label, key]) => (
                 <div key={label}>

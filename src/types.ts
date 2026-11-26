@@ -1,4 +1,5 @@
 import { viewShortcut, type ViewShortcut } from "./sessionShortcuts";
+import { validAppTheme, type AppTheme } from "./appThemes";
 import { validTerminalForeground, validTerminalPalette, type TerminalPaletteId } from "./terminalThemes";
 
 export interface Host {
@@ -51,7 +52,7 @@ export interface Snippet {
 }
 export interface Settings {
   sessionViewShortcut?: ViewShortcut;
-  theme: "dark" | "light" | "system";
+  theme: AppTheme;
   terminalTheme: TerminalPaletteId;
   terminalForeground?: string;
   followAppTheme: boolean;
@@ -190,6 +191,7 @@ export function message(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 export function normalizeConfig(value: Partial<Config>): Config {
+  const theme = validAppTheme(value.settings?.theme) ? value.settings.theme : defaultSettings.theme;
   return {
     ...emptyConfig,
     ...value,
@@ -219,10 +221,11 @@ export function normalizeConfig(value: Partial<Config>): Config {
       : emptyConfig.workspaces,
     settings: {
       ...defaultSettings, ...value.settings,
+      theme,
       terminalTheme: validTerminalPalette(value.settings?.terminalTheme) ? value.settings.terminalTheme : defaultSettings.terminalTheme,
       terminalForeground: validTerminalForeground(value.settings?.terminalForeground) ? value.settings.terminalForeground : undefined,
       followAppTheme: value.settings?.followAppTheme ?? (
-        !value.settings?.terminalTheme || value.settings.terminalTheme === (value.settings.theme || defaultSettings.theme)
+        !value.settings?.terminalTheme || value.settings.terminalTheme === theme
       ),
       sessionViewShortcut: viewShortcut(value.settings?.sessionViewShortcut),
     },

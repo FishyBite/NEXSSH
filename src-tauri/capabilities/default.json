@@ -3,5 +3,5 @@
   "identifier": "main-capability",
   "description": "Local desktop window and native file selection",
   "windows": ["main"],
-  "permissions": ["core:default", "core:window:allow-close", "core:window:allow-destroy", "dialog:default"]
+  "permissions": ["core:default", "core:window:allow-close", "core:window:allow-destroy", "core:window:allow-set-fullscreen", "dialog:default"]
 }

@@ -1,12 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Cable, Pencil, Plus, RefreshCw, Trash2, X } from "lucide-react";
 import { DropdownMenu } from "radix-ui";
-import { request } from "./api";
 import { ConnectionCard } from "./ConnectionCard";
 import {
   Button,
   Confirm,
-  Empty,
   ErrorBox,
   Field,
   IconButton,
@@ -21,6 +19,7 @@ import {
   type SerialProfile,
 } from "./serialProfile";
 import SerialConsole from "./SerialConsole";
+import { serialPortLabel, suggestedPort, useSerialPorts } from "./useSerialPorts";
 import "./serial.css";
 
 interface Props {
@@ -28,7 +27,7 @@ interface Props {
   workspace: string;
   config: Config;
   save: (config: Config) => Promise<void>;
-  appearance: "light" | "dark";
+  appearance: Config["settings"]["terminalTheme"];
 }
 type Session = { id: string; profile: SerialProfile };
 const baudRates = [1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600];
@@ -53,12 +52,11 @@ export default function SerialWorkspace({
   const [manualPort, setManualPort] = useState(false);
   const [customBaud, setCustomBaud] = useState(false);
   const [remove, setRemove] = useState<SerialProfile | null>(null);
-  const [ports, setPorts] = useState<string[]>([]);
-  const [listing, setListing] = useState(false);
+  const { snapshot, listing, error: portError, refresh } = useSerialPorts(visible);
+  const { ports, added } = snapshot;
+  const autoSelect = useRef(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [portError, setPortError] = useState("");
-  const scanId = useRef(0);
   const localSessions = sessions.filter(
     (s) => s.profile.workspaceId === workspace,
   );
@@ -66,28 +64,20 @@ export default function SerialWorkspace({
     localSessions.find((s) => s.id === activeByWorkspace[workspace]) || localSessions.at(-1);
   const editing = !!draft && profiles.some((p) => p.id === draft.id);
 
-  async function refresh() {
-    const id = ++scanId.current;
-    setListing(true);
-    setPortError("");
-    try {
-      const list = await request<string[]>("serial_ports");
-      if (id === scanId.current) setPorts(list);
-    } catch (e) {
-      if (id === scanId.current) setPortError(message(e));
-    } finally {
-      if (id === scanId.current) setListing(false);
-    }
-  }
-  const dialogOpen = !!draft;
   useEffect(() => {
-    if (dialogOpen) void refresh();
-  }, [dialogOpen]);
+    if (portError || !autoSelect.current) return;
+    setDraft(current => {
+      if (!current) return null;
+      const port = suggestedPort(current.port, snapshot);
+      return port === current.port ? current : { ...current, port };
+    });
+  }, [snapshot, portError]);
   function edit(profile: SerialProfile) {
     setError("");
     setManualPort(false);
     setCustomBaud(!baudRates.includes(profile.baud));
-    setDraft({ ...profile });
+    autoSelect.current = !profile.port;
+    setDraft({ ...profile, port: profile.port || (portError ? "" : suggestedPort("", snapshot)) });
   }
   function connect(profile: SerialProfile) {
     if (!profile.port.trim()) {
@@ -149,6 +139,13 @@ export default function SerialWorkspace({
       setSaving(false);
     }
   }
+  const pickedPort = ports.find(p => p.name === draft?.port);
+  const portStatus = pickedPort?.inUse ? "This port is open in VEXSSH. Disconnect its session to use it here."
+    : (!portError && !listing && draft?.port && !pickedPort && !manualPort) ? "This port is not currently detected. Reconnect the device or choose another port."
+    : !portError && added.size > 1 ? "Multiple ports were just connected. Choose the one for your device."
+    : !portError && pickedPort && added.has(pickedPort.name) ? `${pickedPort.name} was just connected.`
+    : !portError && !listing && ports.length === 0 ? "No serial ports detected. Plug in the device or enter a port manually."
+    : "";
   return (
     <div
       hidden={!visible}
@@ -201,13 +198,24 @@ export default function SerialWorkspace({
           </div>
         </details>
       )}
-      {!shown && !saved.length && (
-        <Empty
-          icon={<Cable size={28} />}
-          title="No serial sessions"
-          description="Choose a COM port and baud rate to open a console."
-        />
-      )}
+      <details className="serial-devices" key={shown ? "compact-devices" : "detected-devices"} open={shown ? undefined : true}>
+        <summary>Detected ports ({ports.length})</summary>
+        <div className="serial-devices-body">
+          {portError ? <ErrorBox error={portError} />
+            : ports.length === 0 && <p>{listing ? "Checking serial ports…" : "Plug in a serial device to see its port here."}</p>}
+          {ports.map(p => (
+            <button key={p.name} type="button" className="serial-device" disabled={p.inUse || !!portError}
+              onClick={() => edit({ ...newSerialProfile(workspace), port: p.name })}>
+              <Cable size={15} aria-hidden="true" />
+              <span>{serialPortLabel(p)}</span>
+              <small className={added.has(p.name) ? "serial-new" : undefined}>
+                {p.inUse ? "Open in VEXSSH" : added.has(p.name) ? "Just connected" : "Detected"}
+              </small>
+            </button>
+          ))}
+          {portError && <Button onClick={refresh} disabled={listing}>Refresh ports</Button>}
+        </div>
+      </details>
       {localSessions.length > 0 && (
         <div className="serial-session-list" aria-label="Serial sessions">
           {localSessions.map((s) => (
@@ -275,22 +283,26 @@ export default function SerialWorkspace({
                     value={manualPort ? "manual" : draft.port ? "port:" + draft.port : ""}
                     onChange={event => {
                       const value = event.target.value;
+                      autoSelect.current = false;
                       setManualPort(value === "manual");
                       if (value === "manual") setError("");
                       else change("port", value.slice("port:".length));
                     }}>
                     <option value="">Choose at connect</option>
-                    {draft.port && !ports.includes(draft.port) && !manualPort && (
+                    {draft.port && !pickedPort && !manualPort && (
                       <option value={"port:" + draft.port}>{draft.port}{listing ? "" : " (not listed)"}</option>
                     )}
-                    {ports.map(port => <option key={port} value={"port:" + port}>{port}</option>)}
+                    {ports.map(port => <option key={port.name} value={"port:" + port.name} disabled={port.inUse}>
+                      {serialPortLabel(port)}{port.inUse ? " (open in VEXSSH)" : added.has(port.name) ? " (just connected)" : ""}
+                    </option>)}
                     <option value="manual">Enter manually…</option>
                   </select>
                 </Field>
-                <IconButton label="Refresh serial ports" disabled={listing} type="button" onClick={() => void refresh()}>
+                <IconButton label="Refresh serial ports" disabled={listing} type="button" onClick={refresh}>
                   <RefreshCw size={15} />
                 </IconButton>
               </div>
+              {portStatus && <p className="field-note serial-port-status" role="status">{portStatus}</p>}
               {manualPort && <Field label="Port name">
                 <input maxLength={128} value={draft.port} placeholder="COM7" spellCheck={false}
                   onChange={event => change("port", event.target.value)}/>
@@ -409,7 +421,7 @@ export default function SerialWorkspace({
               >
                 Save profile
               </Button>
-              <Button type="submit" disabled={saving} variant="primary">
+              <Button type="submit" disabled={saving || pickedPort?.inUse} variant="primary">
                 <Cable size={15} />
                 Connect
               </Button>

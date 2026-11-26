@@ -1,0 +1,18 @@
+.app-shell.window-fullscreen:not(.terminal-layout) > .main-column > .topbar {
+  display: flex;
+  min-height: 40px;
+  height: 40px;
+  padding-inline: 12px;
+}
+.window-fullscreen .serial-page.has-session:not([hidden]) {
+  max-width: none;
+  padding: 8px 12px;
+  gap: 6px;
+}
+.window-fullscreen .serial-page.has-session .page-header h1 { font-size: 18px; }
+.window-fullscreen .serial-page.has-session .page-header { gap: 8px; }
+.terminal-topline > .icon-button[aria-keyshortcuts="F11"] {
+  align-self: center;
+  flex-shrink: 0;
+  margin-inline: 2px;
+}

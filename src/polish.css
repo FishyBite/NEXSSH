@@ -33,14 +33,14 @@ button:disabled { cursor: not-allowed; }
 .status-message { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 38vw; min-width: 0; }
 .status-message:empty { display: none; }
 .environment-badge { display: inline-flex; align-items: center; border-radius: 3px; padding: 2px 5px; font-size: 9px; line-height: 1.35; font-weight: 600; white-space: nowrap; }
-.env-production { color: #ffb7c2; background: #47242d; }
-.env-staging { color: #f7d089; background: #403321; }
-.env-development { color: #a9c8ff; background: #25354d; }
-.env-lab { color: #9cdac9; background: #203c35; }
-:root[data-theme="light"] .env-production { color: #94233b; background: #f9e1e7; }
-:root[data-theme="light"] .env-staging { color: #775000; background: #f7eac7; }
-:root[data-theme="light"] .env-development { color: #2b5198; background: #e2ebfc; }
-:root[data-theme="light"] .env-lab { color: #226451; background: #dcefe9; }
+.env-production { --env-color: var(--error); }
+.env-staging { --env-color: var(--warning); }
+.env-development { --env-color: var(--accent-text); }
+.env-lab { --env-color: var(--success); }
+.environment-badge {
+  color: var(--env-color);
+  background: color-mix(in srgb, var(--env-color) 9%, var(--card));
+}
 .host-name { display: inline-block; padding: 3px 0; }
 .host-row:focus-within { background: var(--hover); }
 .host-actions { gap: 3px; }

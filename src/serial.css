@@ -13,11 +13,38 @@
   margin: 0;
 }
 .serial-profiles summary,
+.serial-devices summary,
 .serial-form summary {
   cursor: pointer;
   font-weight: 600;
   padding: 9px 0;
 }
+.serial-devices { flex: none; }
+.serial-devices-body {
+  display: grid;
+  gap: 4px;
+  max-height: 13rem;
+  overflow: auto;
+  margin: 4px 0 12px;
+}
+.serial-devices-body > p,
+.serial-port-status { color: var(--muted); margin: 0; }
+.serial-device {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--card);
+  color: var(--text);
+  text-align: left;
+}
+.serial-device:hover:enabled { background: var(--hover); }
+.serial-device span { min-width: 0; overflow-wrap: anywhere; }
+.serial-device small { margin-left: auto; color: var(--muted); white-space: nowrap; }
+.serial-device .serial-new { color: var(--accent-text); }
+.serial-device:disabled { cursor: default; }
 .serial-card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));

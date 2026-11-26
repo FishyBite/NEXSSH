@@ -1,0 +1,10 @@
+{
+  "dark":     { "label": "Dark",     "scheme": "dark",  "background": "#0b0d12", "foreground": "#f1f3f9" },
+  "light":    { "label": "Light",    "scheme": "light", "background": "#f5f6f9", "foreground": "#171e2d" },
+  "midnight": { "label": "Midnight", "scheme": "dark",  "background": "#101a30", "foreground": "#dfebff" },
+  "graphite": { "label": "Graphite", "scheme": "dark",  "background": "#202124", "foreground": "#eeece7" },
+  "forest":   { "label": "Forest",   "scheme": "dark",  "background": "#13251f", "foreground": "#e1eddf" },
+  "dusk":     { "label": "Dusk",     "scheme": "dark",  "background": "#291f32", "foreground": "#f2e5f1" },
+  "paper":    { "label": "Paper",    "scheme": "light", "background": "#f6f1e6", "foreground": "#322b24" },
+  "mist":     { "label": "Mist",     "scheme": "light", "background": "#e9f3f4", "foreground": "#17363d" }
+}

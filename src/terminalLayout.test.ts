@@ -31,6 +31,11 @@ describe("terminal workspace preferences", () => {
     const config = { ...emptyConfig, settings: { ...emptyConfig.settings, theme: "system" as const } };
     expect(terminalSettings(sessions[0], config, "light").terminalTheme).toBe("light");
     expect(terminalSettings(sessions[0], config, "dark").terminalTheme).toBe("dark");
+    for (const theme of ["midnight", "graphite", "forest", "dusk", "paper", "mist"] as const) {
+      const themed = { ...config, settings: { ...config.settings, theme } };
+      expect(terminalSettings(sessions[0], themed).terminalTheme).toBe(theme);
+      expect(terminalSettings(sessions[0], themed, theme).terminalTheme).toBe(theme);
+    }
     expect(terminalSettings(sessions[0], { ...config, settings: { ...config.settings,
       followAppTheme: false, terminalTheme: "solarized" } }, "light").terminalTheme).toBe("solarized");
   });

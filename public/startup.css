@@ -1,13 +1,120 @@
 html {
   color-scheme: dark;
-  background: #0b0d12;
-  color: #f1f3f9;
+  --bg: #0b0d12;
+  --text: #f1f3f9;
+  background: var(--bg);
+  color: var(--text);
 }
 
 html[data-theme="light"] {
   color-scheme: light;
-  background: #f5f6f9;
-  color: #171e2d;
+  --bg: #f5f6f9;
+  --text: #171e2d;
+}
+
+/* Load these tokens before the shell mounts. Each preview uses the same tokens
+   as the running app, even when the workspace uses a different palette. */
+html:root[data-app-theme="midnight"], .theme-swatch[data-app-theme="midnight"] {
+  --bg: #101a30;
+  --text: #dfebff;
+  --sidebar: #152139;
+  --card: #1b2944;
+  --elevated: #233352;
+  --accent: #91b4ff;
+  --accent-text: #b4ceff;
+  --muted: #a9bbd5;
+  --border: #344461;
+  --input-border: #738caf;
+  --hover: #263856;
+  --selection: #2d4066;
+  --success: #78d9ac;
+  --warning: #efc986;
+  --error: #ff9aac;
+}
+html:root[data-app-theme="graphite"], .theme-swatch[data-app-theme="graphite"] {
+  --bg: #202124;
+  --text: #eeece7;
+  --sidebar: #252629;
+  --card: #2b2c30;
+  --elevated: #34353a;
+  --accent: #dfc39b;
+  --accent-text: #eed3ac;
+  --muted: #bdb9b2;
+  --border: #444347;
+  --input-border: #8c877f;
+  --hover: #393839;
+  --selection: #46413a;
+  --success: #add3a3;
+  --warning: #e9ca87;
+  --error: #fba6a0;
+}
+html:root[data-app-theme="forest"], .theme-swatch[data-app-theme="forest"] {
+  --bg: #13251f;
+  --text: #e1eddf;
+  --sidebar: #192d25;
+  --card: #1e342b;
+  --elevated: #263e34;
+  --accent: #a5d497;
+  --accent-text: #b9e2ae;
+  --muted: #b2c6b4;
+  --border: #3a5143;
+  --input-border: #819d87;
+  --hover: #294236;
+  --selection: #314d3b;
+  --success: #a3d9a6;
+  --warning: #e9cd88;
+  --error: #ffab96;
+}
+html:root[data-app-theme="dusk"], .theme-swatch[data-app-theme="dusk"] {
+  --bg: #291f32;
+  --text: #f2e5f1;
+  --sidebar: #30263a;
+  --card: #382d44;
+  --elevated: #42354d;
+  --accent: #e6abd1;
+  --accent-text: #f3c6e1;
+  --muted: #cfbcd1;
+  --border: #55425c;
+  --input-border: #a28ba5;
+  --hover: #45374d;
+  --selection: #55405a;
+  --success: #afd9b0;
+  --warning: #edce94;
+  --error: #ffabb8;
+}
+html:root[data-app-theme="paper"], .theme-swatch[data-app-theme="paper"] {
+  --bg: #f6f1e6;
+  --text: #322b24;
+  --sidebar: #ece5d6;
+  --card: #fffaf0;
+  --elevated: #eee6d5;
+  --accent: #87512e;
+  --accent-text: #75421e;
+  --muted: #665a4b;
+  --border: #d5c9b3;
+  --input-border: #84755f;
+  --hover: #eee3cf;
+  --selection: #ead9ba;
+  --success: #365f38;
+  --warning: #755109;
+  --error: #923834;
+}
+html:root[data-app-theme="mist"], .theme-swatch[data-app-theme="mist"] {
+  --bg: #e9f3f4;
+  --text: #17363d;
+  --sidebar: #deebed;
+  --card: #f5fafb;
+  --elevated: #dbeaed;
+  --accent: #196575;
+  --accent-text: #155565;
+  --muted: #48636a;
+  --border: #bfd2d5;
+  --input-border: #647e85;
+  --hover: #d6e8eb;
+  --selection: #c9e3e7;
+  --success: #25604e;
+  --warning: #785115;
+  --error: #9a3848;
 }
 
 #startup-status {

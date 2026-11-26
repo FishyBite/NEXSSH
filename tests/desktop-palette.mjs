@@ -207,14 +207,27 @@ try {
                 return null;
               }
               if (command === "plugin:window|scale_factor") return 1;
+              if (command === "plugin:window|is_fullscreen") return !!state.windowFullscreen;
+              if (command === "plugin:window|set_fullscreen") { state.windowFullscreen = args.value; return; }
               if (command === "plugin:dialog|open") return "C:\\fixture\\vexssh-update.zip";
               if (command !== "request")
                 throw new Error("Unexpected native command " + command);
               const { action, payload = {} } = args;
               if (action === "state_load") return structuredClone(state.config);
-              if (action === "serial_ports") return ["COM7", "COM9"];
-              if (action === "serial_open") { state.serialPort = payload.id; return null; }
-              if (action === "serial_close") { if (payload.id === state.serialPort) state.serialPort = null; return null; }
+              if (action === "serial_ports") {
+                state.serialScans = (state.serialScans ?? 0) + 1;
+                const ports = state.detectedPorts ?? [{ name: "COM7", kind: "Serial" }, { name: "COM9", kind: "Serial" }];
+                return payload.details ? ports.map(p => ({...p, inUse: p.name === state.openPortName}))
+                  : ports.map(p => p.name);
+              }
+              if (action === "serial_open") {
+                state.serialOpens = (state.serialOpens ?? 0) + 1;
+                state.serialPort = payload.id; state.openPortName = payload.port; return null;
+              }
+              if (action === "serial_close") {
+                if (payload.id === state.serialPort) { state.serialPort = null; state.openPortName = null; }
+                return null;
+              }
               if (action === "serial_write") {
                 if (payload.id !== state.serialPort) throw new Error("Serial port is closed.");
                 state.serialOutput = (state.serialOutput || "") + payload.text;
@@ -344,7 +357,7 @@ try {
           expanded,
           scrollResult,
           injectError: process.env.VEXSSH_INJECT_RENDER_ERROR === "1" || process.env.VEXSSH_TERMINAL_RETRY === "1",
-          persistConfig: process.env.VEXSSH_ENHANCEMENTS === "1" || process.env.VEXSSH_SIDEBAR_NAVIGATION === "1" || process.env.VEXSSH_TERMINAL_APPEARANCE === "1",
+          persistConfig: process.env.VEXSSH_ENHANCEMENTS === "1" || process.env.VEXSSH_SIDEBAR_NAVIGATION === "1" || process.env.VEXSSH_TERMINAL_APPEARANCE === "1" || process.env.VEXSSH_APP_THEMES === "1",
           currentVersion: tauri.version,
           terminalClipboard: process.env.VEXSSH_TERMINAL_CLIPBOARD === "1",
         },
@@ -394,6 +407,13 @@ try {
       }
       try {
         await page.goto(url);
+        if (process.env.VEXSSH_APP_THEMES === "1") {
+          const { exerciseAppThemes } = await import("./desktop-app-themes.mjs");
+          reports.push(await exerciseAppThemes({ page, expect, nav }));
+          assert.deepEqual(errors, []);
+          assert.deepEqual(consoleErrors, []);
+          continue;
+        }
         if (process.env.VEXSSH_TERMINAL_APPEARANCE === "1") {
           const { exerciseTerminalAppearance } = await import("./desktop-terminal-appearance.mjs");
           reports.push(await exerciseTerminalAppearance({page, expect, fixture, nav}));
@@ -406,6 +426,14 @@ try {
           await exerciseSerial({ page, expect });
           assert.deepEqual(errors, []);
           reports.push({ serial: "passed", expanded });
+          continue;
+        }
+        if (process.env.VEXSSH_WINDOW_FULLSCREEN === "1") {
+          const { exerciseWindowFullscreen } = await import("./desktop-window-fullscreen.mjs");
+          await exerciseWindowFullscreen({page, expect, fixture, nav});
+          assert.deepEqual(errors, []);
+          assert.deepEqual(consoleErrors, []);
+          reports.push({windowFullscreen: "passed"});
           continue;
         }
         if (process.env.VEXSSH_IMMERSIVE === "1") {

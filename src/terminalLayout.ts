@@ -89,7 +89,7 @@ export function effectiveSessionGroup(
 export function terminalSettings(
   session: Session,
   config: Config,
-  appearance: "dark" | "light" = config.settings.theme === "light" ? "light" : "dark",
+  appearance: Config["settings"]["terminalTheme"] = config.settings.theme === "system" ? "dark" : config.settings.theme,
 ): Config["settings"] {
   const profileId =
     session.terminalProfileId ??

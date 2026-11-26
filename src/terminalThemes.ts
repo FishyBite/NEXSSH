@@ -9,6 +9,7 @@ export const terminalPaletteNames = {
   paper: "Paper",
   forest: "Forest",
   dusk: "Dusk",
+  mist: "Mist",
 } as const;
 export type TerminalPaletteId = keyof typeof terminalPaletteNames;
 
@@ -136,6 +137,16 @@ export const terminalThemes: Record<TerminalPaletteId, ITheme> = {
     blue: "#A2B8FB", magenta: "#DBA4DF", cyan: "#89CDC9", white: "#DECFE2",
     brightBlack: "#AF98B5", brightRed: "#FFB9BF", brightGreen: "#C6E7B8", brightYellow: "#F7DFAA",
     brightBlue: "#C5CEFF", brightMagenta: "#F0C0EC", brightCyan: "#ABE3DC", brightWhite: "#FFF1FC",
+  },
+  mist: {
+    background: "#E9F3F4",
+    foreground: "#17363D",
+    cursor: "#12576E",
+    selectionBackground: "#BDDCE0",
+    black: "#1C3139", red: "#953544", green: "#236039", yellow: "#77560E",
+    blue: "#2B547F", magenta: "#71406B", cyan: "#165F68", white: "#58686E",
+    brightBlack: "#586C73", brightRed: "#852A3E", brightGreen: "#19532D", brightYellow: "#62460E",
+    brightBlue: "#1D456E", brightMagenta: "#623660", brightCyan: "#0F5159", brightWhite: "#2A3C45",
   },
 };
 

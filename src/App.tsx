@@ -12,6 +12,9 @@ import {
 import { DropdownMenu } from "radix-ui";
 import { serverAddress } from "./ConnectionCard";
 import { useSessionSidebar } from "./useSessionSidebar";
+import { useWindowFullscreen } from "./useWindowFullscreen";
+import "./window-fullscreen.css";
+import { resolveAppTheme, validAppTheme, type AppTheme } from "./appThemes";
 import "./immersive-session.css";
 import { readProfiles, presetFor, usesMongoSrv } from "./databaseProfiles";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -54,6 +57,8 @@ import {
   Layers,
   Zap,
   Cable,
+  Fullscreen,
+  Shrink,
 } from "lucide-react";
 import { request, subscribe, desktop } from "./api";
 import {
@@ -131,9 +136,11 @@ export default function App() {
   const configRef = useRef(config);
   configRef.current = config;
   const windowThemeSync = useRef<Promise<unknown>>(Promise.resolve());
-  const [appearance, setAppearance] = useState<"dark" | "light">(() =>
-    document.documentElement.dataset.theme === "light" ? "light" : "dark"
-  );
+  const [appearance, setAppearance] = useState<Exclude<AppTheme, "system">>(() => {
+    const { appTheme, theme } = document.documentElement.dataset;
+    return validAppTheme(appTheme) && appTheme !== "system" ? appTheme : theme === "light" ? "light" : "dark";
+  });
+  const appearanceMode = resolveAppTheme(appearance, "dark");
   const [loading, setLoading] = useState(desktop);
   const [loadError, setLoadError] = useState("");
   const [workspace, setWorkspace] = useState("default");
@@ -468,7 +475,8 @@ export default function App() {
             ? "dark"
             : "light"
           : config.settings.theme;
-      document.documentElement.dataset.theme = theme;
+      document.documentElement.dataset.theme = resolveAppTheme(theme, media.matches ? "dark" : "light");
+      document.documentElement.dataset.appTheme = theme;
       setAppearance(theme);
       if (desktop) {
         windowThemeSync.current = windowThemeSync.current
@@ -477,7 +485,7 @@ export default function App() {
       }
     };
     apply();
-    media.addEventListener("change", apply);
+    if (config.settings.theme === "system") media.addEventListener("change", apply);
     forcedColors.addEventListener("change", apply);
     return () => {
       media.removeEventListener("change", apply);
@@ -982,7 +990,19 @@ export default function App() {
   };
   const connectedCount = sessions.filter(s => s.status === "connected").length;
   const runningTransfers = transfers.filter(t => t.status === "running" || t.status === "queued").length;
-  const immersive = sessionWorkspace && terminalLayout.fullscreen && (!!activeSession || view === "Terminal");
+  const windowFullscreen = useWindowFullscreen(notify);
+  const immersive = windowFullscreen.active || (sessionWorkspace && terminalLayout.fullscreen && (!!activeSession || view === "Terminal"));
+  const fullscreenLabel = windowFullscreen.active ? "Exit full screen" : "Enter full screen";
+  const fullscreenButton = <IconButton label={fullscreenLabel} title={fullscreenLabel + " (F11)"} aria-keyshortcuts="F11"
+    aria-pressed={windowFullscreen.active} onMouseDown={event => event.preventDefault()}
+    onClick={() => {
+      void windowFullscreen.toggle();
+      if (view === "Terminal" || view === "Serial") {
+        const selector = view === "Serial" ? ".serial-console:not([hidden])" : ".terminal-pane.focused";
+        const input = document.querySelector<HTMLElement>(selector + " .xterm-helper-textarea");
+        if (input?.getClientRects().length) input.focus({ preventScroll: true });
+      }
+    }}>{windowFullscreen.active ? <Shrink size={16}/> : <Fullscreen size={16}/>}</IconButton>;
   const focusTerminalAfterSidebar = useCallback(() => requestDialogFocus(value => value + 1), []);
   const drawer = useSessionSidebar(immersive, active, view, workspace, focusTerminalAfterSidebar);
   const collapsed = !immersive && config.settings.sidebarCollapsed;
@@ -1006,7 +1026,7 @@ export default function App() {
     if (!desktop) { setConfig(next); return; }
     void save(next).catch(error => notify(message(error), true));
   };
-  const nextTheme = appearance === "light" ? "dark" : "light";
+  const nextTheme = appearanceMode === "light" ? "dark" : "light";
   const themeLabel = `Switch to ${nextTheme} mode`;
   const toggleTheme = async () => {
     try {
@@ -1168,7 +1188,7 @@ export default function App() {
       }}
     >
       <div
-        className={`app-shell ${immersive ? "immersive-session" : ""} ${collapsed ? "sidebar-collapsed" : ""} ${sessionWorkspace ? "terminal-layout" : ""} ${view === "Files" || sessionDatabase ? "session-files" : ""}`}
+        className={`app-shell ${windowFullscreen.active ? "window-fullscreen" : ""} ${immersive ? "immersive-session" : ""} ${collapsed ? "sidebar-collapsed" : ""} ${sessionWorkspace ? "terminal-layout" : ""} ${view === "Files" || sessionDatabase ? "session-files" : ""}`}
       >
         <a className="skip-link" href="#workspace">
           Skip to workspace
@@ -1358,6 +1378,10 @@ export default function App() {
         <div className="main-column">
           <header className="topbar">
             <div className="breadcrumb">
+              {windowFullscreen.active && !sessionWorkspace && <Button variant="ghost" ref={drawer.trigger}
+                aria-label="Sidebar" aria-controls="workspace-sidebar" aria-expanded={drawer.visible} onClick={drawer.toggle}>
+                <PanelLeftOpen size={16}/>
+              </Button>}
               <span>
                 {config.workspaces.find((w) => w.id === workspace)?.name}
               </span>
@@ -1365,6 +1389,7 @@ export default function App() {
               <strong>{view === "Recent" ? "Recent connections" : view}</strong>
             </div>
             <div className="toolbar">
+              {!sessionWorkspace && fullscreenButton}
               {displayedSession && (
                 <button
                   className="active-connection"
@@ -1437,7 +1462,8 @@ export default function App() {
                   <TerminalViewBoundary visible={view === "Terminal" || (!!splitPair && sessionWorkspace)} onRetry={() => setTerminalAction(undefined)}>
                     <TerminalWorkspace
                       onSavedLayouts={() => setLayoutsOpen(true)}
-                      immersive={immersive} sidebarOpen={drawer.visible} sidebarTrigger={drawer.trigger} onSidebar={drawer.toggle}
+                      immersive={immersive && sessionWorkspace} sidebarOpen={drawer.visible} sidebarTrigger={drawer.trigger} onSidebar={drawer.toggle}
+                      windowFullscreen={windowFullscreen.active} fullscreenButton={fullscreenButton}
                       layout={terminalLayout} setLayout={setTerminalLayout} openPaneView={openPaneView}
                       appearance={appearance}
                       {...sharedFolderProps}
@@ -1531,7 +1557,7 @@ export default function App() {
                           refreshTransfers();
                           if (openQueue) openAllTransfers();
                         }}
-                        theme={appearance}
+                        theme={appearanceMode}
                         defaultDirectory={config.settings.downloadDirectory}
                         onDirtyChange={slot === 0 ? setEditorDirty : setSecondFileDirty}
                         visible={shown}

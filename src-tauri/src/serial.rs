@@ -1,8 +1,8 @@
 use base64::{engine::general_purpose::STANDARD, Engine};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use serialport::{DataBits, FlowControl, Parity, StopBits};
-use std::collections::HashMap;
+use serialport::{DataBits, FlowControl, Parity, SerialPortInfo, SerialPortType, StopBits};
+use std::collections::{HashMap, HashSet};
 use std::io::{self, Read, Write};
 use std::sync::{
     atomic::{AtomicBool, Ordering},
@@ -81,9 +81,43 @@ impl Options {
 }
 
 struct Session {
+    port: String,
     stopping: Arc<AtomicBool>,
     input: mpsc::SyncSender<Vec<u8>>,
     worker: JoinHandle<()>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct DetectedPort {
+    name: String,
+    kind: &'static str,
+    product: Option<String>,
+    manufacturer: Option<String>,
+    usb_id: Option<String>,
+    in_use: bool,
+}
+
+fn describe_port(port: SerialPortInfo, in_use: bool) -> DetectedPort {
+    let (kind, product, manufacturer, usb_id) = match port.port_type {
+        SerialPortType::UsbPort(info) => (
+            "USB",
+            info.product,
+            info.manufacturer,
+            Some(format!("{:04X}:{:04X}", info.vid, info.pid)),
+        ),
+        SerialPortType::BluetoothPort => ("Bluetooth", None, None, None),
+        SerialPortType::PciPort => ("PCI", None, None, None),
+        SerialPortType::Unknown => ("Serial", None, None, None),
+    };
+    DetectedPort {
+        name: port.port_name,
+        kind,
+        product,
+        manufacturer,
+        usb_id,
+        in_use,
+    }
 }
 
 impl Session {
@@ -135,14 +169,38 @@ fn exchange<P: Read + Write>(
 
 pub fn dispatch(app: &AppHandle, action: &str, payload: Value) -> Result<Value, String> {
     if action == "serial_ports" {
-        let mut names: Vec<_> = serialport::available_ports()
-            .map_err(|e| format!("Could not list serial ports: {e}"))?
-            .into_iter()
-            .map(|p| p.port_name)
+        let mut ports = serialport::available_ports()
+            .map_err(|e| format!("Could not list serial ports: {e}"))?;
+        ports.sort_by_cached_key(|p| {
+            let name = p.port_name.to_uppercase();
+            (
+                name.strip_prefix("COM").and_then(|n| n.parse::<u32>().ok()),
+                name,
+            )
+        });
+        ports.dedup_by(|a, b| a.port_name == b.port_name);
+        if payload.get("details").and_then(Value::as_bool) != Some(true) {
+            return Ok(json!(ports
+                .into_iter()
+                .map(|p| p.port_name)
+                .collect::<Vec<_>>()));
+        }
+        let state = app.state::<SerialSessions>();
+        let active: HashSet<_> = state
+            .0
+            .lock()
+            .map_err(|_| "Serial session storage is unavailable.")?
+            .values()
+            .filter(|s| !s.worker.is_finished())
+            .map(|s| s.port.clone())
             .collect();
-        names.sort();
-        names.dedup();
-        return Ok(json!(names));
+        return Ok(json!(ports
+            .into_iter()
+            .map(|p| {
+                let in_use = active.contains(&p.port_name);
+                describe_port(p, in_use)
+            })
+            .collect::<Vec<_>>()));
     }
     let id = Uuid::parse_str(crate::required(&payload, "id")?)
         .map_err(|_| "Invalid serial session ID.")?;
@@ -158,6 +216,12 @@ pub fn dispatch(app: &AppHandle, action: &str, payload: Value) -> Result<Value, 
             }
             let options: Options =
                 serde_json::from_value(payload).map_err(|_| "Incomplete serial settings.")?;
+            if sessions
+                .values()
+                .any(|s| s.port == options.port.trim() && !s.worker.is_finished())
+            {
+                return Err(format!("{} is already open in VEXSSH. Switch to its serial session or disconnect it first.", options.port));
+            }
             let port = options.builder()?.open().map_err(|e| format!("Could not open {}: {e}. Check the port, speed, and whether another application is using it.", options.port))?;
             let stopping = Arc::new(AtomicBool::new(false));
             let stop = Arc::clone(&stopping);
@@ -174,6 +238,7 @@ pub fn dispatch(app: &AppHandle, action: &str, payload: Value) -> Result<Value, 
             sessions.insert(
                 id,
                 Session {
+                    port: options.port.trim().to_owned(),
                     stopping,
                     input: tx,
                     worker,
@@ -208,6 +273,28 @@ pub fn dispatch(app: &AppHandle, action: &str, payload: Value) -> Result<Value, 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn describes_enumerated_usb_ports_without_device_access() {
+        let device = SerialPortInfo {
+            port_name: "COM17".into(),
+            port_type: SerialPortType::UsbPort(serialport::UsbPortInfo {
+                vid: 0x0403,
+                pid: 0x6001,
+                manufacturer: Some("Adapter maker".into()),
+                product: Some("USB UART".into()),
+                serial_number: Some("fixture".into()),
+            }),
+        };
+        let info = json!(describe_port(device, true));
+        assert_eq!(
+            info,
+            json!({
+                "name":"COM17", "kind":"USB", "product":"USB UART", "manufacturer":"Adapter maker",
+                "usbId":"0403:6001", "inUse":true,
+            })
+        );
+    }
 
     #[test]
     fn terminal_sends_ordered_input_and_receives_binary_output_before_device_loss() {

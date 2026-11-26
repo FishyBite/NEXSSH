@@ -3,6 +3,7 @@ import { fuzzyMatch } from "./search";
 import { parentPath } from "./paths";
 import { defaultSettings, normalizeConfig, type Host } from "./types";
 import { getTerminalTheme, terminalPaletteNames } from "./terminalThemes";
+import { appThemeOptions, resolveAppTheme, validAppTheme } from "./appThemes";
 import {
   authenticationChoice,
   changeAuthentication,
@@ -10,6 +11,21 @@ import {
 } from "./authentication";
 
 describe("workspace compatibility", () => {
+  it("round-trips every app palette and normalizes unrecognized imported IDs", () => {
+    for (const theme of appThemeOptions) {
+      const imported = JSON.parse(JSON.stringify({ settings: { ...defaultSettings, theme } }));
+      expect(normalizeConfig(imported).settings.theme).toBe(theme);
+      if (theme !== "system") expect(getTerminalTheme(theme).background).toBeTruthy();
+    }
+    for (const theme of ["constructor", "__proto__", "unknown", "", null, {}]) {
+      expect(validAppTheme(theme)).toBe(false);
+      expect(normalizeConfig(JSON.parse(JSON.stringify({ settings: { theme } }))).settings.theme).toBe("dark");
+    }
+    expect(resolveAppTheme("system", "dark")).toBe("dark");
+    expect(resolveAppTheme("system", "light")).toBe("light");
+    expect(resolveAppTheme("paper", "dark")).toBe("light");
+    expect(resolveAppTheme("forest", "light")).toBe("dark");
+  });
   it("enables mouse selection copying by default and keeps an explicit opt-out", () => {
     expect(normalizeConfig({}).settings.copyOnSelect).toBe(true);
     const config = normalizeConfig({ settings: { ...defaultSettings, copyOnSelect: false } });

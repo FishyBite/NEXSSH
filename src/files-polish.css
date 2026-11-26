@@ -446,3 +446,16 @@
     animation: none;
   }
 }
+.editor-toolbar ~ * .cm-editor {
+  background: var(--bg);
+  color: var(--text);
+}
+.editor-toolbar ~ * .cm-editor .cm-gutters {
+  background: var(--sidebar);
+  color: var(--muted);
+  border-right-color: var(--border);
+}
+.editor-toolbar ~ * .cm-editor .cm-activeLine,
+.editor-toolbar ~ * .cm-editor .cm-activeLineGutter {
+  background: var(--hover);
+}
