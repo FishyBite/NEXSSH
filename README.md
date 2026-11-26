@@ -45,15 +45,21 @@ Screenshots from RC8 with sample connections.
 - **Serial** for Windows COM ports. Save the baud rate, parity, stop bits, and flow control for each device.
 - **Databases** with a query editor and object browser. Connect directly or through an existing SSH session. SQLite opens a local file.
 
+## Terminal appearance
+
+Open **Settings → Terminal** to choose a palette and font for SSH and serial consoles. Midnight, Graphite, Forest, and Dusk have dark backgrounds. Paper has a warm light background. JetBrains Mono and IBM Plex Mono are included in the app and work offline.
+
+Use the color picker or enter a hex value to change ordinary terminal text. Programs can still set their own ANSI colors. SSH terminal profiles can override the global text color. [JetBrains Mono license](public/licenses/JetBrains-Mono.txt) · [IBM Plex Mono license](public/licenses/IBM-Plex-Mono.txt)
+
 ## Download
 
-For Windows x64, use [Online Setup or Portable from the RC8 release](../../releases/tag/v1.0.0-rc.8).
+For Windows x64, use [Online Setup or Portable from the RC9 release](../../releases/tag/v1.0.0-rc.9).
 
-**Older versions:** [RC7](../../releases/tag/v1.0.0-rc.7).
+Previous downloads include [RC8](../../releases/tag/v1.0.0-rc.8) and [RC7](../../releases/tag/v1.0.0-rc.7).
 
 ## Application data
 
-The RC8 download uses the same profile and vault locations as RC7. Builds from the current `main` branch use separate storage. Keep your existing build if you need to open older profiles or backups.
+The RC9 Windows download uses the same profile and vault locations as RC7 and RC8. To build the Windows release with those locations, check out the `v1.0.0-rc.9` tag. Development builds from `main` use their own storage.
 
 ## Run on Windows
 

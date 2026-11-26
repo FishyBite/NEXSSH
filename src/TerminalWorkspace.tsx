@@ -37,6 +37,7 @@ import {
 import type { Session, Config, Transfer } from "./types";
 import { message } from "./types";
 import { getTerminalTheme } from "./terminalThemes";
+import { applyTerminalFont } from "./applyTerminalFont";
 import { protectsKeyboardInput } from "./sessionShortcuts";
 import { request, subscribe } from "./api";
 import { readClipboardText, writeClipboardText } from "./clipboard";
@@ -1352,13 +1353,12 @@ function TerminalPane({
   useEffect(() => {
     if (!element.current || !hasTerminal) return;
     const terminal = new Terminal({
-      fontFamily: settings.fontFamily,
       fontSize: settings.fontSize,
       cursorStyle: settings.cursorStyle,
       cursorBlink: true,
       scrollback: 20000,
       allowProposedApi: false,
-      theme: getTerminalTheme(settings.terminalTheme),
+      theme: getTerminalTheme(settings.terminalTheme, settings.terminalForeground),
     });
     const prompt = observeShellPrompt(terminal);
     const liveTransport = () => transport.current.id === session.id && transport.current.live;
@@ -1605,16 +1605,18 @@ function TerminalPane({
   useEffect(() => {
     const terminal = term.current;
     if (!terminal) return;
-    terminal.options.fontFamily = settings.fontFamily;
-    terminal.options.fontSize = settings.fontSize;
+    return applyTerminalFont(terminal, settings.fontFamily, settings.fontSize, () => resizeTerminal.current?.());
+  }, [session.id, hasTerminal, settings.fontFamily, settings.fontSize]);
+  useEffect(() => {
+    const terminal = term.current;
+    if (!terminal) return;
     terminal.options.cursorStyle = settings.cursorStyle;
-    terminal.options.theme = getTerminalTheme(settings.terminalTheme);
-    resizeTerminal.current?.();
+    terminal.options.theme = getTerminalTheme(settings.terminalTheme, settings.terminalForeground);
   }, [
-    settings.fontFamily,
-    settings.fontSize,
+    session.id,
     settings.cursorStyle,
     settings.terminalTheme,
+    settings.terminalForeground,
     hasTerminal,
   ]);
   useLayoutEffect(() => {

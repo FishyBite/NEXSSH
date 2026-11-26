@@ -34,6 +34,28 @@ describe("terminal workspace preferences", () => {
     expect(terminalSettings(sessions[0], { ...config, settings: { ...config.settings,
       followAppTheme: false, terminalTheme: "solarized" } }, "light").terminalTheme).toBe("solarized");
   });
+  it("inherits a global text color and permits independent SSH profile palettes and colors", () => {
+    const session = { ...sessions[0], terminalProfileId: "ops" };
+    const config: Config = {
+      ...emptyConfig,
+      settings: { ...emptyConfig.settings, terminalForeground: "#CCEEDD" },
+      terminalProfiles: [{
+        id: "ops", name: "Ops", fontFamily: "Consolas", fontSize: 14, cursorStyle: "block",
+        copyOnSelect: true, environment: {}, terminalTheme: "forest",
+      }],
+    };
+    expect(terminalSettings(session, config, "light")).toMatchObject({
+      terminalTheme: "forest", terminalForeground: "#CCEEDD",
+    });
+    config.terminalProfiles[0].terminalForeground = "#123ABC";
+    expect(terminalSettings(session, config, "light").terminalForeground).toBe("#123ABC");
+    expect(terminalSettings(sessions[1], config, "light")).toMatchObject({
+      terminalTheme: "light", terminalForeground: "#CCEEDD",
+    });
+    delete config.settings.terminalForeground;
+    delete config.terminalProfiles[0].terminalForeground;
+    expect(terminalSettings(session, config).terminalForeground).toBeUndefined();
+  });
   it("restores a split by durable tab identity after the native connection ID changes", () => {
     expect(resolveSplitPair(sessions, "native-a", "tab-a", "tab-b")).toEqual(sessions);
     expect(

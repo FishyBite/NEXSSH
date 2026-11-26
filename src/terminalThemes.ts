@@ -1,7 +1,26 @@
 import type { ITheme } from "@xterm/xterm";
-import type { Settings } from "./types";
 
-export const terminalThemes: Record<Settings["terminalTheme"], ITheme> = {
+export const terminalPaletteNames = {
+  dark: "VEXSSH dark",
+  light: "VEXSSH light",
+  solarized: "Solarized",
+  midnight: "Midnight",
+  graphite: "Graphite",
+  paper: "Paper",
+  forest: "Forest",
+  dusk: "Dusk",
+} as const;
+export type TerminalPaletteId = keyof typeof terminalPaletteNames;
+
+export function validTerminalPalette(value: unknown): value is TerminalPaletteId {
+  return typeof value === "string" && Object.hasOwn(terminalPaletteNames, value);
+}
+
+export function validTerminalForeground(value: unknown): value is string {
+  return typeof value === "string" && value.length === 7 && /^#[0-9a-f]{6}$/i.test(value);
+}
+
+export const terminalThemes: Record<TerminalPaletteId, ITheme> = {
   dark: {
     background: "#0B0D12",
     foreground: "#E4E8F2",
@@ -68,10 +87,59 @@ export const terminalThemes: Record<Settings["terminalTheme"], ITheme> = {
     brightCyan: "#78CFC7",
     brightWhite: "#FDF6E3",
   },
+  midnight: {
+    background: "#101A30",
+    foreground: "#D7E6FA",
+    cursor: "#8EBAFF",
+    selectionBackground: "#304B76",
+    black: "#1E2B45", red: "#FF8298", green: "#76D6A4", yellow: "#EFC97C",
+    blue: "#82ADFF", magenta: "#C1A2F6", cyan: "#76D9E9", white: "#CADAF0",
+    brightBlack: "#8195B4", brightRed: "#FFA9B5", brightGreen: "#9CECC1", brightYellow: "#F9DE9D",
+    brightBlue: "#ABC9FF", brightMagenta: "#D6BCFF", brightCyan: "#A2EAF3", brightWhite: "#F1F6FF",
+  },
+  graphite: {
+    background: "#202124",
+    foreground: "#E5E5E2",
+    cursor: "#F4F2EC",
+    selectionBackground: "#494B50",
+    black: "#303136", red: "#F79791", green: "#A3CE9A", yellow: "#DDCA8C",
+    blue: "#9ABBE5", magenta: "#C8A4D4", cyan: "#8FCACB", white: "#D7D8D5",
+    brightBlack: "#999DA1", brightRed: "#FFB9B2", brightGreen: "#C2E4BB", brightYellow: "#EFE2AE",
+    brightBlue: "#BED5F3", brightMagenta: "#E1C1EB", brightCyan: "#B3E4E4", brightWhite: "#F5F5F1",
+  },
+  paper: {
+    background: "#F6F1E6",
+    foreground: "#322B24",
+    cursor: "#754A20",
+    selectionBackground: "#DDCEAF",
+    black: "#2D2925", red: "#983936", green: "#3A623C", yellow: "#775812",
+    blue: "#365D87", magenta: "#7B4276", cyan: "#246869", white: "#6A6257",
+    brightBlack: "#71675B", brightRed: "#85312F", brightGreen: "#24502F", brightYellow: "#65470C",
+    brightBlue: "#234B78", brightMagenta: "#683567", brightCyan: "#115757", brightWhite: "#3F392F",
+  },
+  forest: {
+    background: "#13251F",
+    foreground: "#DFEBDA",
+    cursor: "#ABD7A3",
+    selectionBackground: "#38564A",
+    black: "#23372F", red: "#F49684", green: "#A4D28B", yellow: "#DFCB81",
+    blue: "#92BDE1", magenta: "#CEA6CE", cyan: "#83CEC1", white: "#CEDDC7",
+    brightBlack: "#92AA97", brightRed: "#FFB5A2", brightGreen: "#C0E7A7", brightYellow: "#F3E09D",
+    brightBlue: "#B4D5F1", brightMagenta: "#E4C1DE", brightCyan: "#A6E6D7", brightWhite: "#F1F7E9",
+  },
+  dusk: {
+    background: "#291F32",
+    foreground: "#EEDFEB",
+    cursor: "#E7A8C7",
+    selectionBackground: "#58405D",
+    black: "#392D43", red: "#FF959F", green: "#AAD39C", yellow: "#EBC789",
+    blue: "#A2B8FB", magenta: "#DBA4DF", cyan: "#89CDC9", white: "#DECFE2",
+    brightBlack: "#AF98B5", brightRed: "#FFB9BF", brightGreen: "#C6E7B8", brightYellow: "#F7DFAA",
+    brightBlue: "#C5CEFF", brightMagenta: "#F0C0EC", brightCyan: "#ABE3DC", brightWhite: "#FFF1FC",
+  },
 };
 
-export function getTerminalTheme(name?: string): ITheme {
-  return (
-    terminalThemes[name as Settings["terminalTheme"]] || terminalThemes.dark
-  );
+export function getTerminalTheme(name?: string, foreground?: string): ITheme {
+  const palette = validTerminalPalette(name) ? terminalThemes[name] : terminalThemes.dark;
+  return validTerminalForeground(foreground) ? { ...palette, foreground } : palette;
 }

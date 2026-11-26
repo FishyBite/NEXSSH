@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { fuzzyMatch } from "./search";
 import { parentPath } from "./paths";
 import { defaultSettings, normalizeConfig, type Host } from "./types";
-import { getTerminalTheme } from "./terminalThemes";
+import { getTerminalTheme, terminalPaletteNames } from "./terminalThemes";
 import {
   authenticationChoice,
   changeAuthentication,
@@ -73,6 +73,22 @@ describe("filesystem parent navigation", () => {
   });
 });
 describe("terminal colors", () => {
+  it.each(Object.keys(terminalPaletteNames))("%s overrides ordinary text without changing ANSI or the saved palette", name => {
+    const base = getTerminalTheme(name);
+    expect(getTerminalTheme(name, "#Ad127e")).toEqual({ ...base, foreground: "#Ad127e" });
+    expect(getTerminalTheme(name)).toBe(base);
+    expect(getTerminalTheme(name).foreground).not.toBe("#Ad127e");
+  });
+  it("discards malformed custom colors and unknown palette identifiers from imported settings", () => {
+    for (const color of ["red", "#ABC", "#FFFFFF\n", "#12345678", "url(a)", ""]) {
+      const saved = normalizeConfig({ settings: { ...defaultSettings, terminalForeground: color } });
+      expect(saved.settings.terminalForeground).toBeUndefined();
+      expect(getTerminalTheme("paper", color)).toBe(getTerminalTheme("paper"));
+    }
+    for (const name of ["unknown", "constructor", "__proto__"]) {
+      expect(getTerminalTheme(name)).toBe(getTerminalTheme("dark"));
+    }
+  });
   it("defaults old preferences safely and offers distinct themes", () => {
     expect(getTerminalTheme(undefined).background).toBe("#0B0D12");
     expect(getTerminalTheme("unknown").background).toBe("#0B0D12");

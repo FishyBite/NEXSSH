@@ -25,7 +25,8 @@ import type {
   TerminalProfile,
 } from "./types";
 import { message, uid } from "./types";
-import { getTerminalTheme } from "./terminalThemes";
+import { getTerminalTheme, validTerminalForeground } from "./terminalThemes";
+import { terminalFontFamilies, TerminalPaletteOptions, TerminalPreview, TerminalTextColor } from "./TerminalAppearance";
 import type { IdentityInspection } from "./authentication";
 import { request } from "./api";
 import { writeClipboardText } from "./clipboard";
@@ -47,16 +48,23 @@ import {
 type Notify = (text: string, error?: boolean) => void;
 function TerminalProfiles({
   config,
+  appearance,
   save,
   notify,
 }: {
   config: Config;
+  appearance: "light" | "dark";
   save: (config: Config) => Promise<void>;
   notify: Notify;
 }) {
   const [editing, setEditing] = useState<TerminalProfile | null>(null);
   const [environment, setEnvironment] = useState("");
   const [error, setError] = useState("");
+  const profilePalette = editing?.terminalTheme ?? (config.settings.followAppTheme ? appearance : config.settings.terminalTheme);
+  const inheritedColors = getTerminalTheme(profilePalette, config.settings.terminalForeground);
+  const profileColors = validTerminalForeground(editing?.terminalForeground)
+    ? getTerminalTheme(profilePalette, editing.terminalForeground) : inheritedColors;
+  const invalidForeground = !!editing?.terminalForeground && !validTerminalForeground(editing.terminalForeground);
   const edit = (profile?: TerminalProfile) => {
     const next = profile || {
       id: uid(),
@@ -77,7 +85,7 @@ function TerminalProfiles({
     setError("");
   };
   const persist = async () => {
-    if (!editing) return;
+    if (!editing || invalidForeground) return;
     try {
       const env: Record<string, string> = {};
       for (const line of environment.split("\n").filter(Boolean)) {
@@ -182,6 +190,7 @@ function TerminalProfiles({
             <Field label="Font family">
               <input
                 required
+                list="terminal-profile-fonts"
                 value={editing?.fontFamily || ""}
                 onChange={(event) =>
                   setEditing((profile) =>
@@ -192,6 +201,9 @@ function TerminalProfiles({
                 }
               />
             </Field>
+            <datalist id="terminal-profile-fonts">
+              {terminalFontFamilies.map(font => <option key={font} value={font} />)}
+            </datalist>
             <Field label="Font size">
               <input
                 type="number"
@@ -245,11 +257,17 @@ function TerminalProfiles({
                 }
               >
                 <option value="">Use workspace colors</option>
-                <option value="dark">VEXSSH dark</option>
-                <option value="light">VEXSSH light</option>
-                <option value="solarized">Solarized</option>
+                <TerminalPaletteOptions />
               </select>
             </Field>
+            {editing && <>
+              <TerminalTextColor value={editing.terminalForeground}
+                fallback={inheritedColors.foreground!} background={inheritedColors.background!}
+                resetLabel="Use workspace text color"
+                onChange={terminalForeground => setEditing({ ...editing, terminalForeground })} />
+              <TerminalPreview colors={profileColors} fontFamily={editing.fontFamily}
+                fontSize={editing.fontSize} cursorStyle={editing.cursorStyle} />
+            </>}
             <div className="span-2">
               <Field
                 label="Shell environment"
@@ -282,7 +300,7 @@ function TerminalProfiles({
           </div>
           <footer className="modal-footer">
             <Button onClick={() => setEditing(null)}>Cancel</Button>
-            <Button type="submit" variant="primary">
+            <Button type="submit" variant="primary" disabled={invalidForeground}>
               Save profile
             </Button>
           </footer>
@@ -1039,8 +1057,11 @@ export function SettingsView({
   const [tab, setTab] = useState("Appearance");
   const [changes, setChanges] = useState<Partial<Settings>>({});
   const draft = { ...config.settings, ...changes };
-  const previewColors = getTerminalTheme(draft.followAppTheme
-    ? (draft.theme === "system" ? appearance : draft.theme) : draft.terminalTheme);
+  const previewPalette = draft.followAppTheme
+    ? (draft.theme === "system" ? appearance : draft.theme) : draft.terminalTheme;
+  const palette = getTerminalTheme(previewPalette);
+  const previewColors = getTerminalTheme(previewPalette, draft.terminalForeground);
+  const invalidForeground = !!draft.terminalForeground && !validTerminalForeground(draft.terminalForeground);
   const [busy, setBusy] = useState(false);
   const [backup, setBackup] = useState<"export" | "import" | null>(null);
   const [password, setPassword] = useState("");
@@ -1066,6 +1087,10 @@ export function SettingsView({
   const set = <K extends keyof Settings>(key: K, value: Settings[K]) =>
     setChanges(current => ({ ...current, [key]: value }));
   const persist = async () => {
+    if (invalidForeground) {
+      setTab("Terminal");
+      return;
+    }
     setBusy(true);
     try {
       await save({ ...config, settings: draft });
@@ -1118,7 +1143,7 @@ export function SettingsView({
         title="Settings"
         description="Make this workspace feel like yours."
       >
-        <Button variant="primary" busy={busy} onClick={() => void persist()}>
+        <Button variant="primary" busy={busy} disabled={tab === "Terminal" && invalidForeground} onClick={() => void persist()}>
           <Save size={15} />
           Save changes
         </Button>
@@ -1182,13 +1207,8 @@ export function SettingsView({
                   value={draft.fontFamily}
                   onChange={(e) => set("fontFamily", e.target.value)}
                 >
-                  {[
-                    "Cascadia Code, Consolas, monospace",
-                    "Consolas",
-                    "Cascadia Code",
-                    "Courier New",
-                    "monospace",
-                  ].map((f) => (
+                  {!terminalFontFamilies.includes(draft.fontFamily) && <option>{draft.fontFamily}</option>}
+                  {terminalFontFamilies.map((f) => (
                     <option key={f}>{f}</option>
                   ))}
                 </select>
@@ -1238,30 +1258,21 @@ export function SettingsView({
                   }}
                 >
                   <option value="app">Follow app theme</option>
-                  <option value="dark">VEXSSH dark</option>
-                  <option value="light">VEXSSH light</option>
-                  <option value="solarized">Solarized</option>
+                  <TerminalPaletteOptions />
                 </select>
               </Field>
-              <div
-                className="terminal-preview span-2"
-                style={{
-                  fontFamily: draft.fontFamily,
-                  fontSize: draft.fontSize,
-                  background: previewColors.background,
-                  color: previewColors.foreground,
-                }}
-              >
-                user@server ~ ${" "}
-                <span className={`preview-cursor ${draft.cursorStyle}`} />
-              </div>
+              <TerminalTextColor value={draft.terminalForeground}
+                fallback={palette.foreground!} background={palette.background!} resetLabel="Reset to theme color"
+                onChange={color => set("terminalForeground", color)} />
+              <TerminalPreview colors={previewColors} fontFamily={draft.fontFamily}
+                fontSize={draft.fontSize} cursorStyle={draft.cursorStyle} />
               <p className="field-note span-2">
                 Shell command history and completion use the connected server’s
                 shell. Commands sent from the command bar are available for
                 completion during the session.
               </p>
               <div className="span-2">
-                <TerminalProfiles config={config} save={save} notify={notify} />
+                <TerminalProfiles config={config} appearance={appearance} save={save} notify={notify} />
               </div>
             </div>
           )}

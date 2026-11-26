@@ -101,6 +101,7 @@ export function terminalSettings(
     ...config.settings,
     ...profile,
     terminalTheme: profile?.terminalTheme ?? (config.settings.followAppTheme ? appearance : config.settings.terminalTheme),
+    terminalForeground: profile?.terminalForeground ?? config.settings.terminalForeground,
     fontSize: Number.isFinite(fontSize)
       ? Math.max(8, Math.min(32, fontSize))
       : 14,

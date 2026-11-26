@@ -1,4 +1,5 @@
 import { viewShortcut, type ViewShortcut } from "./sessionShortcuts";
+import { validTerminalForeground, validTerminalPalette, type TerminalPaletteId } from "./terminalThemes";
 
 export interface Host {
   id: string;
@@ -35,7 +36,8 @@ export interface TerminalProfile {
   cursorStyle: Settings["cursorStyle"];
   copyOnSelect: boolean;
   environment: Record<string, string>;
-  terminalTheme?: "dark" | "light" | "solarized";
+  terminalTheme?: TerminalPaletteId;
+  terminalForeground?: string;
 }
 export interface Snippet {
   id: string;
@@ -50,7 +52,8 @@ export interface Snippet {
 export interface Settings {
   sessionViewShortcut?: ViewShortcut;
   theme: "dark" | "light" | "system";
-  terminalTheme: "dark" | "light" | "solarized";
+  terminalTheme: TerminalPaletteId;
+  terminalForeground?: string;
   followAppTheme: boolean;
   fontFamily: string;
   fontSize: number;
@@ -206,12 +209,18 @@ export function normalizeConfig(value: Partial<Config>): Config {
     })),
     groups: value.groups || [],
     snippets: value.snippets || [],
-    terminalProfiles: value.terminalProfiles || [],
+    terminalProfiles: (value.terminalProfiles || []).map(profile => ({
+      ...profile,
+      terminalTheme: validTerminalPalette(profile.terminalTheme) ? profile.terminalTheme : undefined,
+      terminalForeground: validTerminalForeground(profile.terminalForeground) ? profile.terminalForeground : undefined,
+    })),
     workspaces: value.workspaces?.length
       ? value.workspaces
       : emptyConfig.workspaces,
     settings: {
       ...defaultSettings, ...value.settings,
+      terminalTheme: validTerminalPalette(value.settings?.terminalTheme) ? value.settings.terminalTheme : defaultSettings.terminalTheme,
+      terminalForeground: validTerminalForeground(value.settings?.terminalForeground) ? value.settings.terminalForeground : undefined,
       followAppTheme: value.settings?.followAppTheme ?? (
         !value.settings?.terminalTheme || value.settings.terminalTheme === (value.settings.theme || defaultSettings.theme)
       ),

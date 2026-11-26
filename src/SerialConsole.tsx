@@ -5,6 +5,7 @@ import { Cable, RotateCw, Unplug } from "lucide-react";
 import { request, subscribe } from "./api";
 import { readClipboardText, writeClipboardText } from "./clipboard";
 import { getTerminalTheme } from "./terminalThemes";
+import { applyTerminalFont } from "./applyTerminalFont";
 import {
   serialFraming,
   serialInput,
@@ -106,21 +107,24 @@ export default function SerialConsole({
   useEffect(() => {
     const term = terminal.current;
     if (!term) return;
-    term.options.theme = getTerminalTheme(theme);
-    term.options.fontSize = settings.fontSize;
-    term.options.fontFamily = settings.fontFamily || "Consolas, monospace";
+    return applyTerminalFont(term, settings.fontFamily, settings.fontSize, () => {
+      if (mount.current?.clientWidth && mount.current.clientHeight) fit.current?.fit();
+    });
+  }, [settings.fontFamily, settings.fontSize]);
+
+  useEffect(() => {
+    const term = terminal.current;
+    if (!term) return;
+    term.options.theme = getTerminalTheme(theme, settings.terminalForeground);
     term.options.cursorStyle = settings.cursorStyle;
-    if (visible && mount.current?.clientWidth) {
+  }, [theme, settings.terminalForeground, settings.cursorStyle]);
+
+  useEffect(() => {
+    if (visible && mount.current?.clientWidth && terminal.current) {
       fit.current?.fit();
-      term.focus();
+      terminal.current.focus();
     }
-  }, [
-    visible,
-    theme,
-    settings.fontSize,
-    settings.fontFamily,
-    settings.cursorStyle,
-  ]);
+  }, [visible]);
 
   useEffect(() => {
     if (!attempt) return;
