@@ -120,9 +120,9 @@ type ConnectionFlow = {
 };
 const navigation = [
   { label: "Hosts", icon: Server },
-  { label: "Groups", icon: FolderTree },
   { label: "Favorites", icon: Star },
   { label: "Recent", icon: History },
+  { label: "Groups", icon: FolderTree },
   { label: "SSH keys", icon: KeyRound },
   { label: "Snippets", icon: Code2 },
 ];
@@ -1272,10 +1272,10 @@ export default function App() {
             {[
               { label: "Terminal", icon: TerminalSquare },
               { label: "Files", icon: Files },
-              { label: "Databases", icon: Database },
               { label: "Serial", icon: Cable },
-              { label: "Monitoring", icon: Activity },
+              { label: "Databases", icon: Database },
               { label: "Transfers", icon: ArrowDownUp },
+              { label: "Monitoring", icon: Activity },
               { label: "Tunnels", icon: Network },
             ].map(({ label, icon: Icon }) => (
               <button
