@@ -71,17 +71,17 @@ Open **Download for Windows** to see the GitHub Releases page. Each version list
 - **Portable** runs directly on a computer that already has WebView2.
 - **SHA256SUMS.txt** contains the checksums for that version.
 
-RC11 is unsigned. Download from the release page and compare the file with its entry in **SHA256SUMS.txt** using PowerShell:
+The RC12 Windows binaries are unsigned. Download from the release page and compare the file with its entry in **SHA256SUMS.txt** using PowerShell:
 
 ```powershell
-Get-FileHash .\VEXSSH-1.0.0-rc.11-Windows-x64-Online-Setup.exe -Algorithm SHA256
+Get-FileHash .\VEXSSH-1.0.0-rc.12-Windows-x64-Online-Setup.exe -Algorithm SHA256
 ```
 
 A matching hash confirms that the file matches the published build. Windows SmartScreen and Chrome may still display a reputation warning for an unfamiliar download.
 
 ## Application data
 
-The RC11 Windows download uses the same profile and vault locations as the RC7 through RC10 installers. To build the Windows release with those locations, check out the `v1.0.0-rc.11` tag. Development builds from `main` use their own storage.
+The RC12 Windows download uses the same profile and vault locations as the RC7 through RC11 installers. To build the Windows release with those locations, check out the `v1.0.0-rc.12` tag. Development builds from `main` use their own storage.
 
 ## Run on Windows
 

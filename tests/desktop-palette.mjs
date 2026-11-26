@@ -35,7 +35,7 @@ if (process.env.VEXSSH_WINDOW_SCROLL === "1") {
     destination:"/sample/", status:"completed", totalBytes:32, transferredBytes:32, speedBytesPerSecond:0, etaSeconds:null, startedAt:n+1,
   }));
 }
-if (process.env.VEXSSH_HOST_CARDS === "1") {
+if (process.env.VEXSSH_HOST_CARDS === "1" || process.env.VEXSSH_HOST_LAYOUT === "1") {
   const [first, second] = fixture.state_load.hosts;
   Object.assign(first, {name:"OpenShift", hostname:"192.0.2.172", username:"core", environmentLabel:"production",
     icon:"cloud", favorite:true});
@@ -45,6 +45,10 @@ if (process.env.VEXSSH_HOST_CARDS === "1") {
     {...first,id:"card-keysafe",name:"KeySafe",hostname:"192.0.2.75",username:"ops",icon:"database",favorite:false,environmentLabel:"production"},
     {...first,id:"card-hsm",name:"HSM 10G",hostname:"192.0.2.25",username:"cli",authMethod:"agent",icon:"terminal",favorite:false,environmentLabel:"lab"},
   );
+}
+if (process.env.VEXSSH_HOST_LAYOUT === "1") {
+  const { prepareHostLayout } = await import("./desktop-host-layout.mjs");
+  prepareHostLayout(fixture);
 }
 if (process.env.VEXSSH_SESSION_TARGETS === "1" || process.env.VEXSSH_MIXED_VIEWS === "1") {
   const [hostA, hostB] = fixture.state_load.hosts;
@@ -136,7 +140,14 @@ try {
       : [false, true]) {
       const context = await browser.newContext({
         viewport: { width: 1380, height: 900 },
+        deviceScaleFactor: process.env.VEXSSH_HOST_LAYOUT === "1" ? 1.25 : 1,
       });
+      if (process.env.VEXSSH_HOST_LAYOUT === "1") {
+        await context.addInitScript((workspace) => {
+          localStorage.setItem("vexssh.workspace.v1", JSON.stringify(workspace));
+          localStorage.setItem("nexssh.workspace.v1", JSON.stringify(workspace));
+        }, fixture.restoredWorkspace);
+      }
       await context.addInitScript(
         ({ fixture, expanded, scrollResult, injectError, persistConfig, currentVersion, terminalClipboard }) => {
           localStorage.setItem("vexssh.terminal.expanded", String(expanded));
@@ -407,6 +418,13 @@ try {
       }
       try {
         await page.goto(url);
+        if (process.env.VEXSSH_HOST_LAYOUT === "1") {
+          const { exerciseHostLayout } = await import("./desktop-host-layout.mjs");
+          reports.push(await exerciseHostLayout({ page, expect, nav, directory:process.env.VEXSSH_HOST_CAPTURE }));
+          assert.deepEqual(errors, []);
+          assert.deepEqual(consoleErrors, []);
+          continue;
+        }
         if (process.env.VEXSSH_APP_THEMES === "1") {
           const { exerciseAppThemes } = await import("./desktop-app-themes.mjs");
           reports.push(await exerciseAppThemes({ page, expect, nav }));

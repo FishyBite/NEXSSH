@@ -2555,7 +2555,7 @@ small,
 }
 .group-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr));
   gap: 12px;
   margin-bottom: 25px;
 }
@@ -2597,7 +2597,6 @@ small,
 }
 .recent-transfer-summary {
   margin-top: 26px;
-  max-width: 1050px;
 }
 .recent-transfer-summary header {
   display: flex;
@@ -2772,7 +2771,7 @@ small,
 .relative-folder-current code { overflow-wrap: anywhere; }
 .relative-folder-list { overflow-y: auto; max-height: 30vh; }
 
-@media (max-height: 780px) {
+@media (max-height: 880px) {
   .sidebar { padding-top: 12px; padding-bottom: 6px; }
   .sidebar .brand { padding-bottom: 10px; }
   .sidebar .workspace-switcher { margin-bottom: 6px; }

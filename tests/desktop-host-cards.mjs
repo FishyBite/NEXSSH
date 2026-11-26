@@ -10,6 +10,7 @@ export async function exerciseHostCards({page, expect, fixture, nav, directory})
   const attempts = () => page.evaluate(() => window.fixture.calls.filter(call => call.args?.action === "ssh_connect").length);
   const start = await attempts();
   await page.setViewportSize({width:1380,height:900});
+  if (await sidebar.isHidden()) await page.getByRole("button", {name:"Sidebar", exact:true}).click();
   await nav("Hosts").click();
   await expect(nav("Hosts")).toHaveAttribute("aria-current","page");
   await expect(hostGrid.locator("article")).toHaveCount(fixture.state_load.hosts.length);

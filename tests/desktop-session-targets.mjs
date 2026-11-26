@@ -9,6 +9,7 @@ export async function exerciseSessionTargets({ page, expect, nav, fixture }) {
     window.fixture.sessions.delete(sessionId);
     window.fixture.emit("terminal-status", { sessionId, status: "disconnected" });
   }, id);
+  if (!await nav("Hosts").isVisible()) await button(page, "Sidebar").click();
   await nav("Hosts").click();
   await button(page.locator(".connection-card").filter({ hasText: hostB.hostname }), hostB.name).click();
   await expect(page.getByRole("tab")).toHaveCount(2);
@@ -17,6 +18,19 @@ export async function exerciseSessionTargets({ page, expect, nav, fixture }) {
   if (await restoreLayout.isVisible()) await restoreLayout.click();
   const [idA, idB] = await page.evaluate(() => [...window.fixture.sessions.keys()]);
   assert(idA && idB && idA !== idB);
+
+  await nav("Hosts").click();
+  const connection = page.locator(".topbar .active-connection");
+  const status = page.locator(".statusbar");
+  await expect(connection).toHaveText(hostB.name);
+  await expect(status).toContainText("2 active SSH sessions");
+  await connection.click();
+  await expect(page.getByRole("tab", { name: hostB.name, exact: true })).toHaveAttribute("aria-selected", "true");
+  await nav("Serial").click();
+  await expect(page.getByRole("heading", { name: "Serial console" })).toBeVisible();
+  await expect(connection).toHaveCount(0);
+  await expect(status.getByText(hostB.name, { exact: true })).toHaveCount(0);
+  await nav("Terminal").click();
 
   await page.keyboard.press("Control+Shift+p");
   await dialog.getByRole("textbox").fill(name(hostA));
@@ -86,4 +100,12 @@ export async function exerciseSessionTargets({ page, expect, nav, fixture }) {
   await expect(execute).toBeDisabled();
   await expect(dialog.getByRole("alert")).toContainText("reviewed SSH session");
   assert.deepEqual(await writes(), [command, command]);
+  await button(dialog, "Cancel").click();
+  await nav("Hosts").click();
+  await expect(status).toContainText("0 active SSH sessions");
+  await expect(status.getByText(hostB.name, { exact: true })).toHaveCount(0);
+  await expect(status).not.toContainText(/\d+ ms/);
+  await expect(connection).toHaveCount(0);
+  await nav("Terminal").click();
+  await expect(page.getByRole("tab", { name: hostB.name, exact: true })).toHaveAttribute("aria-selected", "true");
 }

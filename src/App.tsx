@@ -303,8 +303,7 @@ export default function App() {
     };
   }
   const sharedFolderProps = { ...folderProps(activeSession), reportedDirectory: reportedDirectory ?? undefined };
-  const fileSession = sessions.find((session) => session.id === fileSessionId);
-  const displayedSession = view === "Files" ? fileSession : activeSession;
+  const displayedSession = view !== "Serial" && activeSession?.status === "connected" ? activeSession : undefined;
   const notify = useCallback((text: string, error = false) => {
     const id = uid();
     if (!error) {
@@ -1399,9 +1398,7 @@ export default function App() {
                     setView("Terminal");
                   }}
                 >
-                  <span
-                    className={`status-dot ${displayedSession.status === "connected" ? "online" : "offline"}`}
-                  />
+                  <span className="status-dot online" />
                   {displayedSession.name}
                 </button>
               )}
@@ -1577,7 +1574,7 @@ export default function App() {
                     )}
                     <Transfers
                       key={transferScope?.tabId || "all"}
-                      sessionId={transferScope ? sessions.find((s) => (s.tabId || s.id) === transferScope.tabId)?.id : fileSession?.id}
+                      sessionId={transferScope ? sessions.find((s) => (s.tabId || s.id) === transferScope.tabId)?.id : activeSession?.id}
                       transfers={transferScope ? transfers.filter(t => (t.tabId || tabForConnection.current.get(t.sessionId) || t.sessionId) === transferScope.tabId) : transfers}
                       refresh={refreshTransfers}
                       notify={notify}
@@ -1636,7 +1633,7 @@ export default function App() {
               Local workspace
             </span>
             <span>
-              {connectedCount} active {connectedCount === 1 ? "session" : "sessions"}
+              {connectedCount} active SSH {connectedCount === 1 ? "session" : "sessions"}
             </span>
             <div className="statusbar-spacer" />
             <span className="status-message" role="status" title={statusMessage?.text}>{statusMessage?.text}</span>
