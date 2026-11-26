@@ -18,7 +18,7 @@ export type TerminalLayout = {
   fullscreen: boolean;
   composerVisible: boolean;
 };
-export const terminalLayoutKey = "vexssh.terminal.layout.v1";
+export const terminalLayoutKey = "nexssh.terminal.layout.v1";
 export const defaultTerminalLayout: TerminalLayout = {
   split: "none",
   primaryTabId: "",

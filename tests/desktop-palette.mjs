@@ -139,7 +139,7 @@ try {
       });
       await context.addInitScript(
         ({ fixture, expanded, scrollResult, injectError, persistConfig, currentVersion, terminalClipboard }) => {
-          localStorage.setItem("vexssh.terminal.expanded", String(expanded));
+          localStorage.setItem("nexssh.terminal.expanded", String(expanded));
           window.isTauri = true;
           const callbacks = new Map();
           const listeners = new Map();
@@ -448,7 +448,7 @@ try {
           .click();
         await expect(page.getByRole("tab")).toHaveCount(1);
         await expect(page.getByRole("dialog")).not.toBeVisible();
-        // Connecting expands the terminal. Restore the docked layout for that test case.
+        // Preserve this regression matrix's docked/expanded starting layout.
         if (!expanded) await page.getByRole("button", {name:"Restore layout", exact:true}).click();
         for (let index = 0; index < 5; index++) {
           await paletteAction("Open new terminal");

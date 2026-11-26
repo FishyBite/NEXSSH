@@ -20,11 +20,12 @@
 #endif
 
 [Setup]
-AppId=com.vexssh.desktop
+; RC7 pins and its signed updater launch the existing executable by this path.
+AppId=com.nexssh.desktop
 AppName=VEXSSH
 AppVersion={#AppVersion}
 AppPublisher=VEXSSH
-DefaultDirName={localappdata}\Programs\VEXSSH
+DefaultDirName={localappdata}\Programs\NEXSSH
 UsePreviousAppDir=no
 DisableDirPage=yes
 DisableProgramGroupPage=yes
@@ -33,7 +34,7 @@ SetupArchitecture=x64
 ArchitecturesAllowed=x64os
 ArchitecturesInstallIn64BitMode=x64os
 SetupIconFile=..\..\src-tauri\icons\icon.ico
-UninstallDisplayIcon={app}\VEXSSH.exe
+UninstallDisplayIcon={app}\NEXSSH.exe
 OutputBaseFilename=VEXSSH-{#AppVersion}-Windows-x64{#SetupSuffix}
 VersionInfoVersion={#GetVersionNumbersString(AppBinary)}
 VersionInfoTextVersion={#AppVersion}
@@ -46,16 +47,43 @@ RestartApplications=no
 
 [Files]
 Source: "{#WebViewInstaller}"; DestName: "{#RuntimeFile}"; Flags: dontcopy nocompression
-Source: "{#AppBinary}"; DestDir: "{app}"; DestName: "VEXSSH.exe"; Flags: replacesameversion
+Source: "{#AppBinary}"; DestDir: "{app}"; DestName: "NEXSSH.exe"; Flags: replacesameversion
 Source: "..\dbbridge\THIRD-PARTY-NOTICES.txt"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{userdesktop}\VEXSSH"; Filename: "{app}\VEXSSH.exe"; WorkingDir: "{app}"; AppUserModelID: "com.vexssh.desktop"
-Name: "{userprograms}\VEXSSH"; Filename: "{app}\VEXSSH.exe"; WorkingDir: "{app}"; AppUserModelID: "com.vexssh.desktop"
+Name: "{userdesktop}\VEXSSH"; Filename: "{app}\NEXSSH.exe"; WorkingDir: "{app}"; AppUserModelID: "com.nexssh.desktop"
+Name: "{userprograms}\VEXSSH"; Filename: "{app}\NEXSSH.exe"; WorkingDir: "{app}"; AppUserModelID: "com.nexssh.desktop"
 
 [Code]
 const
   RuntimeKey = 'Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}';
+
+procedure RemovePreviousShortcut(const OldLink, NewLink: String);
+var
+  Shell, Link: Variant;
+  Target, Arguments: String;
+begin
+  if not (FileExists(OldLink) and FileExists(NewLink)) then Exit;
+  try
+    Shell := CreateOleObject('WScript.Shell');
+    Link := Shell.CreateShortcut(OldLink);
+    Target := Link.TargetPath;
+    Arguments := Link.Arguments;
+    if (CompareText(Target, ExpandConstant('{app}\NEXSSH.exe')) = 0) and
+       (Arguments = '') then
+      if not DeleteFile(OldLink) then Log('Could not remove previous application shortcut.');
+  except
+    Log('Could not verify previous application shortcut.');
+  end;
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep = ssPostInstall then begin
+    RemovePreviousShortcut(ExpandConstant('{userdesktop}\NEXSSH.lnk'), ExpandConstant('{userdesktop}\VEXSSH.lnk'));
+    RemovePreviousShortcut(ExpandConstant('{userprograms}\NEXSSH.lnk'), ExpandConstant('{userprograms}\VEXSSH.lnk'));
+  end;
+end;
 
 function HasRuntimeAt(Root: Integer): Boolean;
 var

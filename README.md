@@ -59,7 +59,7 @@ Previous downloads include [RC8](../../releases/tag/v1.0.0-rc.8) and [RC7](../..
 
 ## Application data
 
-The RC9 Windows download uses the same profile and vault locations as RC7 and RC8. To build the Windows release with those locations, check out the `v1.0.0-rc.9` tag. Development builds from `main` use their own storage.
+This Windows build uses the same profile and vault locations as the official RC8 installer and NEXSSH RC7.
 
 ## Run on Windows
 

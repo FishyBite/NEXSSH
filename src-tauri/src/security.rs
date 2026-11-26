@@ -12,7 +12,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 fn master_key() -> Result<Vec<u8>, String> {
     static LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
     let _guard = LOCK.lock().map_err(|e| e.to_string())?;
-    let entry = keyring::Entry::new("VEXSSH", "vault-master-key-v1").map_err(|e| e.to_string())?;
+    let entry = keyring::Entry::new("NEXSSH", "vault-master-key-v1").map_err(|e| e.to_string())?;
     match entry.get_password() {
         Ok(encoded) => STANDARD.decode(encoded).map_err(|e| e.to_string()),
         Err(keyring::Error::NoEntry) => {
@@ -271,7 +271,7 @@ pub fn dispatch(state: &AppState, action: &str, payload: Value) -> Result<Value,
         "backup_export" => {
             let mut config = state.config()?;
             crate::storage::strip_secrets(&mut config);
-            let envelope = json!({"format":"vexssh-config","version":1,"config":config});
+            let envelope = json!({"format":"nexssh-config","version":1,"config":config});
             let bytes = serde_json::to_vec_pretty(&envelope).map_err(|e| e.to_string())?;
             let bytes = if let Some(password) =
                 payload["password"].as_str().filter(|s| !s.is_empty())
@@ -282,7 +282,7 @@ pub fn dispatch(state: &AppState, action: &str, payload: Value) -> Result<Value,
                 argon2::Argon2::default()
                     .hash_password_into(password.as_bytes(), &salt, &mut key)
                     .map_err(|e| e.to_string())?;
-                serde_json::to_vec_pretty(&json!({"format":"vexssh-encrypted","version":1,"salt":STANDARD.encode(salt),"data":STANDARD.encode(encrypt(&key,&bytes)?)})).map_err(|e|e.to_string())?
+                serde_json::to_vec_pretty(&json!({"format":"nexssh-encrypted","version":1,"salt":STANDARD.encode(salt),"data":STANDARD.encode(encrypt(&key,&bytes)?)})).map_err(|e|e.to_string())?
             } else {
                 bytes
             };
@@ -294,7 +294,7 @@ pub fn dispatch(state: &AppState, action: &str, payload: Value) -> Result<Value,
             let mut envelope: Value =
                 serde_json::from_slice(&read_limited(path, 16 * 1024 * 1024)?)
                     .map_err(|e| e.to_string())?;
-            if envelope["format"] == "vexssh-encrypted" {
+            if envelope["format"] == "nexssh-encrypted" {
                 let password = required(&payload, "password")?;
                 let salt = STANDARD
                     .decode(required(&envelope, "salt")?)
@@ -312,7 +312,7 @@ pub fn dispatch(state: &AppState, action: &str, payload: Value) -> Result<Value,
                 envelope =
                     serde_json::from_slice(&decrypt(&key, &data)?).map_err(|e| e.to_string())?;
             }
-            if envelope["format"] != "vexssh-config" || envelope["version"] != 1 {
+            if envelope["format"] != "nexssh-config" || envelope["version"] != 1 {
                 return Err("Unsupported backup format".into());
             }
             state.save_config(envelope["config"].clone())?;
@@ -321,7 +321,7 @@ pub fn dispatch(state: &AppState, action: &str, payload: Value) -> Result<Value,
         "snippets_export" => {
             let config = state.config()?;
             let bytes = serde_json::to_vec_pretty(
-                &json!({"format":"vexssh-snippets","version":1,"snippets":config["snippets"]}),
+                &json!({"format":"nexssh-snippets","version":1,"snippets":config["snippets"]}),
             )
             .map_err(|e| e.to_string())?;
             write_new(required(&payload, "path")?, &bytes)?;
@@ -331,7 +331,7 @@ pub fn dispatch(state: &AppState, action: &str, payload: Value) -> Result<Value,
             let path = required(&payload, "path")?;
             let file: Value = serde_json::from_slice(&read_limited(path, 16 * 1024 * 1024)?)
                 .map_err(|e| e.to_string())?;
-            if file["format"] != "vexssh-snippets" || file["version"] != 1 {
+            if file["format"] != "nexssh-snippets" || file["version"] != 1 {
                 return Err("Unsupported snippet file format".into());
             }
             let imported = file["snippets"].as_array().ok_or("Missing snippets")?;
