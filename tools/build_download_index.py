@@ -7,6 +7,8 @@ from pathlib import Path
 from urllib.parse import quote
 from urllib.request import Request, urlopen
 
+from release_navigation_block import strip_navigation
+
 
 REPO = "FishyBite/VEXSSH"
 VERSION = re.compile(r"v(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?")
@@ -52,7 +54,7 @@ def download_links(release):
 
 def change_notes(body):
     """Read the release author's highlights, including GitHub-generated release notes."""
-    body = (body or "").replace("\r\n", "\n").strip()
+    body = strip_navigation(body or "").replace("\r\n", "\n").strip()
     heading = re.search(r"^(#{1,6})[ \t]+(?:what['’]s (?:changed|new)|changes|highlights)[ \t]*$",
                         body, flags=re.IGNORECASE | re.MULTILINE)
     if heading:
@@ -74,7 +76,7 @@ def render(releases):
     versions.sort(key=lambda entry: entry[0], reverse=True)
     lines = [
         "# VEXSSH downloads", "",
-        f"[Open GitHub Releases](https://github.com/{REPO}/releases) for Windows downloads and release notes.", "",
+        f"[Open GitHub Releases](https://github.com/{REPO}/releases#user-content-vexssh-versions) for Windows downloads and release notes.", "",
         "Choose **Installer** to install or update VEXSSH on Windows x64. "
         "Choose **Portable** to run it directly with WebView2 already installed. "
         "Versions marked `rc` are release candidates.",
