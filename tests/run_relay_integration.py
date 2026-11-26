@@ -1,6 +1,6 @@
 """Run with Python + asyncssh, a packaged Windows VEXSSH executable, and npm ci."""
 import asyncio
-from contextlib import AsyncExitStack
+from contextlib import AsyncExitStack, contextmanager
 import json
 import os
 from pathlib import Path
@@ -9,6 +9,7 @@ import socket
 import subprocess
 import sys
 import tempfile
+import time
 
 import asyncssh
 
@@ -53,6 +54,23 @@ def tree(root):
     return {p.relative_to(root): p.read_bytes() if p.is_file() else None for p in root.rglob("*")}
 
 
+@contextmanager
+def disposable_workspace():
+    tmp = tempfile.TemporaryDirectory(prefix="vexssh-two-hosts-")
+    try:
+        yield Path(tmp.name)
+    finally:
+        # Child WebView2 processes may briefly retain open files after the desktop app exits.
+        for attempt in range(20):
+            try:
+                tmp.cleanup()
+                break
+            except OSError:
+                if attempt == 19:
+                    raise
+                time.sleep(.25)
+
+
 def verify_known_folders(profile):
     """Check the Win32 paths used by the desktop executable before launching it."""
     import ctypes
@@ -72,8 +90,7 @@ def verify_known_folders(profile):
 
 
 async def run(binary):
-    with tempfile.TemporaryDirectory(prefix="vexssh-two-hosts-", ignore_cleanup_errors=True) as tmp:
-        root = Path(tmp)
+    with disposable_workspace() as root:
         profile = root / "profile"
         roaming, local = profile / "AppData/Roaming", profile / "AppData/Local"
         for path in (roaming, local):
