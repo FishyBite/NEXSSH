@@ -27,6 +27,8 @@ export function fileDropHit(
   const element = document.elementFromPoint(x, y);
   const pathBar = remoteDropPathBar(element);
   if (pathBar) return { target: { side: "remote" }, pathBar };
+  const leftPathBar = !element?.closest("button") && element?.closest<HTMLElement>('[data-file-drop-path="local"]');
+  if (leftPathBar) return { target: { side: "local" }, pathBar: leftPathBar };
   const list = element?.closest<HTMLElement>("[data-file-drop-list]");
   if (!element || !list) return { target: null };
   const side = list.dataset.fileDropList;

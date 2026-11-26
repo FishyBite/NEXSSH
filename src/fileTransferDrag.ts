@@ -1,9 +1,9 @@
 import type { FileEntry } from "./types";
 
 export type FileSide = "local" | "remote";
-export function fileDropHeading(side: FileSide, count: number, server: string) {
-  const action = side === "local" ? "Upload" : "Download";
-  const target = side === "local" ? server : "This computer";
+export function fileDropHeading(side: FileSide, count: number, server: string, peer?: string) {
+  const action = peer ? "Copy" : side === "local" ? "Upload" : "Download";
+  const target = side === "local" ? server : peer || "This computer";
   return `${action} ${count} ${count === 1 ? "item" : "items"} to ${target}`;
 }
 type ListedPane = {
@@ -20,6 +20,7 @@ export type FileDragContext = {
   sessionName: string;
   binding: string;
   remoteReady: boolean;
+  peer?: { id: string; name: string; binding: string; ready: boolean };
   panes: Record<FileSide, ListedPane>;
 };
 type SourceEntry = Pick<FileEntry, "name" | "path" | "isDir">;
@@ -29,6 +30,8 @@ export type FileDragSnapshot = {
   sessionId: string;
   sessionName: string;
   binding: string;
+  peer?: FileDragContext["peer"];
+  external?: boolean;
   protocol: "sftp" | "scp";
   panes: Record<FileSide, { path: string; epoch: number }>;
   targetDirectories: string[];
@@ -37,19 +40,20 @@ export type FileDropTarget = { side: FileSide; directory?: string };
 export type FileTransferPlan = {
   sessionName: string;
   destinationDirectory: string;
-  direction: "upload" | "download";
+  direction: "upload" | "download" | "relay";
   requests: {
     sessionId: string;
     source: string;
     destination: string;
-    direction: "upload" | "download";
+    sourceSessionId?: string;
+    direction: "upload" | "download" | "relay";
     protocol: "sftp" | "scp";
   }[];
 };
 
 export function joinFilePath(parent: string, name: string, side: FileSide) {
   return (
-    parent.replace(/[\\/]+$/, "") +
+    parent.replace(side === "local" ? /[\\/]+$/ : /\/+$/, "") +
     (side === "local" && parent.includes("\\") ? "\\" : "/") +
     name
   );
@@ -62,6 +66,7 @@ export function fileContextReady(context: FileDragContext): boolean {
     !!context.sessionId &&
     !!context.binding &&
     context.remoteReady &&
+    (!context.peer || (context.peer.ready && context.peer.id !== context.sessionId)) &&
     (["local", "remote"] as const).every((side) => {
       const pane = context.panes[side];
       return !!pane.path && !pane.busy && !pane.error;
@@ -88,6 +93,7 @@ function snapshot(
     sessionId: context.sessionId!,
     sessionName: context.sessionName,
     binding: context.binding,
+    peer: context.peer && { ...context.peer },
     protocol: protocol as "sftp" | "scp",
     panes: {
       local: {
@@ -137,7 +143,8 @@ export function captureExternalFiles(
   paths: string[],
   protocol: string,
 ): FileDragSnapshot | null {
-  return snapshot(context, "local", externalEntries(paths), protocol);
+  const result = snapshot(context, "local", externalEntries(paths), protocol);
+  return result && { ...result, external: true };
 }
 
 export function drawerUploadPlan(
@@ -170,6 +177,8 @@ export function fileDragStillValid(
     fileContextReady(context) &&
     snapshot.sessionId === context.sessionId &&
     snapshot.binding === context.binding &&
+    snapshot.peer?.id === context.peer?.id &&
+    snapshot.peer?.binding === context.peer?.binding &&
     (["local", "remote"] as const).every(
       (side) =>
         snapshot.panes[side].path === context.panes[side].path &&
@@ -196,17 +205,21 @@ export function acceptFileDrop(
     return null;
   const destinationDirectory =
     target.directory ?? snapshot.panes[target.side].path;
-  const direction = snapshot.side === "local" ? "upload" : "download";
+  const relay = snapshot.external ? undefined : snapshot.peer;
+  const fromLeft = snapshot.side === "local";
+  const direction = relay ? "relay" : fromLeft ? "upload" : "download";
+  const destinationId = relay && !fromLeft ? relay.id : snapshot.sessionId;
   return {
-    sessionName: snapshot.sessionName,
+    sessionName: relay && !fromLeft ? relay.name : snapshot.sessionName,
     destinationDirectory,
     direction,
     requests: snapshot.entries.map((entry) => ({
-      sessionId: snapshot.sessionId,
+      sessionId: destinationId,
+      ...(relay && { sourceSessionId: fromLeft ? relay.id : snapshot.sessionId }),
       source: entry.path,
-      destination: joinFilePath(destinationDirectory, entry.name, target.side),
+      destination: joinFilePath(destinationDirectory, entry.name, relay ? "remote" : target.side),
       direction,
-      protocol: snapshot.protocol,
+      protocol: relay ? "sftp" : snapshot.protocol,
     })),
   };
 }

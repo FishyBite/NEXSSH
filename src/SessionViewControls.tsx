@@ -62,9 +62,8 @@ type Progress = {
 
 export function progressBySession(transfers: Transfer[]) {
   const groups = new Map<string, Progress>();
-  for (const item of transfers) {
-    if (!["queued", "running", "conflict"].includes(item.status)) continue;
-    let progress = groups.get(item.sessionId);
+  function add(sessionId: string, item: Transfer, direction: string) {
+    let progress = groups.get(sessionId);
     if (!progress) {
       progress = {
         count: 0,
@@ -75,11 +74,11 @@ export function progressBySession(transfers: Transfer[]) {
         total: 0,
         done: 0,
       };
-      groups.set(item.sessionId, progress);
+      groups.set(sessionId, progress);
     }
     progress.count++;
-    progress.upload ||= item.direction === "upload";
-    progress.download ||= item.direction === "download";
+    progress.upload ||= direction === "upload";
+    progress.download ||= direction === "download";
     progress.waiting ||= item.status === "conflict";
     progress.measured &&= item.totalBytes > 0;
     progress.total += item.totalBytes;
@@ -87,6 +86,13 @@ export function progressBySession(transfers: Transfer[]) {
       item.totalBytes,
       Math.max(0, item.transferredBytes),
     );
+  }
+  for (const item of transfers) {
+    if (!["queued", "running", "conflict"].includes(item.status)) continue;
+    add(item.sessionId, item, item.direction === "relay" ? "upload" : item.direction);
+    if (item.direction === "relay" && item.sourceSessionId && item.sourceSessionId !== item.sessionId) {
+      add(item.sourceSessionId, item, "download");
+    }
   }
   return groups;
 }

@@ -58,7 +58,7 @@ export function incomingTransfers(
   return items.filter((t) => {
     if (
       t.sessionId !== sessionId ||
-      (t.direction === "upload" ? "remote" : "local") !== side
+      (t.direction === "download" ? "local" : "remote") !== side
     )
       return false;
     if (side === "local")

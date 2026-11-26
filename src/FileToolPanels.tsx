@@ -178,9 +178,9 @@ function ConflictDialog({
       <div className="modal-body transfer-conflict">
         {(
           [
-            ["Incoming", c.source, c.sourceSize, c.sourceModified],
+            [transfer.sourceHostName ? `Incoming · ${transfer.sourceHostName}` : "Incoming", c.source, c.sourceSize, c.sourceModified],
             [
-              "Existing",
+              transfer.destinationHostName ? `Existing · ${transfer.destinationHostName}` : "Existing",
               c.destination,
               c.destinationSize,
               c.destinationModified,

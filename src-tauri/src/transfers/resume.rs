@@ -20,6 +20,21 @@ impl Partial {
     }
 }
 
+// A relay consumes the shared download budget on source reads and the upload
+// budget on destination writes, including after an interrupted transfer.
+struct RelayReader<'a> {
+    file: ssh2::File,
+    limit: &'a bandwidth::RateLimit,
+    cancel: &'a AtomicBool,
+}
+
+impl Read for RelayReader<'_> {
+    fn read(&mut self, buffer: &mut [u8]) -> std::io::Result<usize> {
+        let n = self.limit.grant(buffer.len(), self.cancel).map_err(std::io::Error::other)?;
+        self.file.read(&mut buffer[..n])
+    }
+}
+
 fn hash_prefix(reader: &mut impl Read, size: u64, cancel: &AtomicBool) -> Result<Sha256, String> {
     let mut digest = Sha256::new();
     let mut buffer = [0u8; 65536];
@@ -101,7 +116,7 @@ pub(super) fn discard_verified(
     };
     let path = stage_name(&partial.destination, &partial.nonce)?;
     let staged = path.to_str().ok_or("Invalid staging path")?;
-    let upload = transfer.direction == "upload";
+    let upload = transfer.direction != "download";
     let Some(stamp) = conflict::inspect(sftp, upload, staged)? else {
         return Ok(());
     };
@@ -133,7 +148,7 @@ fn copy_tail(
     let mut offset = offset;
     let size = progress.transfer.partial.as_ref().unwrap().size;
     let limits = &progress.state.inner.sftp_bandwidth;
-    let limit = if progress.transfer.direction == "upload" {
+    let limit = if progress.transfer.direction != "download" {
         &limits.upload
     } else {
         &limits.download
@@ -166,15 +181,18 @@ fn copy_tail(
 pub(super) fn copy(
     session: &Session,
     sftp: &Sftp,
+    relay_source: Option<&(Session, Sftp)>,
     entry: &Entry,
     expected: Option<&conflict::Stamp>,
     progress: &mut Progress<'_>,
 ) -> Result<(), String> {
-    let upload = progress.transfer.direction == "upload";
+    let upload = progress.transfer.direction != "download";
+    let (source_session, source_sftp) = relay_source.map(|(session, sftp)| (session, sftp)).unwrap_or((session, sftp));
+    let remote_source = relay_source.is_some() || !upload;
     let download_limit = &progress.state.inner.sftp_bandwidth.download;
     let verify_source = || -> Result<(), String> {
         let source =
-            conflict::inspect(sftp, !upload, &entry.source)?.ok_or("Source no longer exists")?;
+            conflict::inspect(source_sftp, remote_source, &entry.source)?.ok_or("Source no longer exists")?;
         if !source.regular
             || source.size != Some(entry.size)
             || (entry.modified.is_some() && source.modified != entry.modified)
@@ -186,14 +204,14 @@ pub(super) fn copy(
         Ok(())
     };
     verify_source()?;
-    let source_hash = if upload {
+    let source_hash = if remote_source {
+        remote_hash(source_session, source_sftp, &entry.source, progress.cancelled, download_limit)?
+    } else {
         checksum(
             fs::File::open(&entry.source).map_err(|e| e.to_string())?,
             progress.cancelled,
             None,
         )?
-    } else {
-        remote_hash(session, sftp, &entry.source, progress.cancelled, download_limit)?
     };
     let existing = progress.transfer.partial.clone();
     let partial = if let Some(partial) = &existing {
@@ -237,7 +255,15 @@ pub(super) fn copy(
     progress.transfer.partial = Some(partial.clone());
     persist(progress.state, progress.transfer)?;
     if upload {
-        let mut source = fs::File::open(&entry.source).map_err(|e| e.to_string())?;
+        let mut source: Box<dyn Read + '_> = if relay_source.is_some() {
+            Box::new(RelayReader {
+                file: source_sftp.open(Path::new(&entry.source)).map_err(|e| format!("Could not read source host: {e}"))?,
+                limit: download_limit,
+                cancel: progress.cancelled,
+            })
+        } else {
+            Box::new(fs::File::open(&entry.source).map_err(|e| e.to_string())?)
+        };
         let offset = if has_stage {
             files::remote_regular(sftp, &stage)?
                 .size

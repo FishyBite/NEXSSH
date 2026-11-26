@@ -115,6 +115,7 @@ import {
   clockDate,
 } from "./ui";
 type PaneData = { path: string; entries: FileEntry[] };
+type FilePeer = { id: string; name: string; hostId: string; binding: string; host?: Host };
 type PanePosition = {
   listing?: PaneData;
   history?: FolderHistory;
@@ -124,6 +125,7 @@ type PanePosition = {
   sort: string;
 };
 type FileTabPosition = {
+  tabId: string;
   binding: string;
   connection?: string;
   local: PanePosition;
@@ -246,6 +248,8 @@ export function FilesView({
     Record<Side, { path: string; historyIndex?: number }>
   >({ local: { path: "" }, remote: { path: "." } });
   const [chooserOpen, setChooserOpen] = useState(false);
+  const [chooserSide, setChooserSide] = useState<Side>("remote");
+  const [peers, setPeers] = useState<Record<string, FilePeer>>({});
   const [pairsOpen, setPairsOpen] = useState(false);
   const [pairs, setPairs] = useState<FolderPair[]>(() => {
     try {
@@ -287,15 +291,47 @@ export function FilesView({
   const restoredFolders = useLayoutFolders(remoteAvailable ? session?.id : undefined);
   const remoteBinding = boundServer?.signature || "";
   const tabId = session ? sessionTabId(session) : "";
+  const peer = peers[tabId];
+  const peerSession = peer && sessions.find(item => item.id === peer.id && item.hostId === peer.hostId);
+  const peerReady = !peer || (peerSession?.status === "connected" &&
+    peer.hostId !== session?.hostId && peer.binding === fileSessionBinding(peer.hostId, hosts));
+  const endpointId = (side: Side) => side === "remote" ? session?.id : peer?.id;
+  const selectPeer = (selection?: Pick<Session, "id" | "name" | "hostId">) => {
+    setPeers(previous => {
+      const next = { ...previous };
+      if (selection) {
+        const host = hosts.find(item => item.id === selection.hostId);
+        const { id, name, hostId } = selection;
+        next[tabId] = { id, name, hostId, host: host && { ...host }, binding: fileSessionBinding(hostId, hosts) };
+      } else delete next[tabId];
+      return next;
+    });
+    setChooserOpen(false);
+  };
+  const keepLeftEndpoint = (rightTab: string) => {
+    setPeers(previous => {
+      if (previous[rightTab] === peer) return previous;
+      const next = { ...previous };
+      if (peer) next[rightTab] = peer;
+      else delete next[rightTab];
+      return next;
+    });
+  };
+  const chooseRightSession = (item: Session) => {
+    keepLeftEndpoint(sessionTabId(item));
+    onSelectSession(item.id);
+  };
   const positions = useRef(new Map<string, FileTabPosition>());
-  let tabPosition = positions.current.get(tabId);
+  const positionKey = JSON.stringify([tabId, peer?.id, peer?.binding]);
+  let tabPosition = positions.current.get(positionKey);
   if (!tabPosition || tabPosition.binding !== remoteBinding) {
     tabPosition = {
+      tabId,
       binding: remoteBinding,
       local: emptyPosition(),
       remote: emptyPosition(),
     };
-    positions.current.set(tabId, tabPosition);
+    positions.current.set(positionKey, tabPosition);
   }
   const position = tabPosition;
   const currentPosition = useRef(position);
@@ -305,8 +341,8 @@ export function FilesView({
   const scopeFor = (side: Side) =>
     folderScope(
       folderStore,
-      side === "local" ? "local" : `host:${session?.hostId || "none"}`,
-      side === "local" ? "" : remoteBinding,
+      side === "local" && !peer ? "local" : `host:${side === "local" ? peer?.hostId : session?.hostId || "none"}`,
+      side === "local" ? peer?.binding || "" : remoteBinding,
     );
   const saveFolderScope = (scope: FolderScope) => {
     const next = putFolderScope(folderStoreRef.current, scope);
@@ -333,7 +369,10 @@ export function FilesView({
     `${name} ${host?.name || ""} ${host?.username || ""} ${host?.hostname || ""}`
       .toLowerCase()
       .includes(serverQuery.trim().toLowerCase());
+  const choosingPeer = chooserSide === "local";
+  const selectedEndpointId = choosingPeer ? peer?.id : session?.id;
   const matchingSessions = connectedSessions.filter((item) =>
+    (choosingPeer ? !!session && item.hostId !== session.hostId : item.hostId !== peer?.hostId) &&
     matchingServer(
       hosts.find((host) => host.id === item.hostId),
       item.name,
@@ -341,6 +380,7 @@ export function FilesView({
   );
   const matchingHosts = hosts.filter(
     (host) =>
+      (choosingPeer ? !!session && host.id !== session.hostId : host.id !== peer?.hostId) &&
       !connectedSessions.some((item) => item.hostId === host.id) &&
       matchingServer(host),
   );
@@ -376,8 +416,8 @@ export function FilesView({
       : { path: ".", entries: [] };
   const data = (side: Side) => (side === "local" ? local : remoteDirectory);
   const payload = (side: Side, sessionId?: string) => ({
-    side,
-    sessionId: side === "remote" ? sessionId : undefined,
+    side: sessionId ? "remote" : side,
+    sessionId,
   });
   const dragContext = useRef<FileDragContext>(null!);
   dragContext.current = {
@@ -394,6 +434,7 @@ export function FilesView({
     sessionName: displayHost?.name || session?.name || "server",
     binding: remoteBinding,
     remoteReady: remoteAvailable && remoteOwner === session?.id,
+    peer: peer && { id: peer.id, name: peer.name, binding: peer.binding, ready: peerReady },
     panes: {
       local: {
         ...local,
@@ -423,7 +464,7 @@ export function FilesView({
     },
   });
   const commitListing = (side: Side, result: PaneData) => {
-    if (session && remoteAvailable && dragContext.current.visible)
+    if (session && remoteAvailable && dragContext.current.visible && (side === "remote" || !peer))
       recordLayoutFolder(session.id, side, result.path);
     const pane = position[side];
     if (pane.listing?.path !== result.path) {
@@ -454,15 +495,14 @@ export function FilesView({
   ) => {
     if (
       position !== currentPosition.current ||
+      (side === "local" && !peerReady) ||
       (side === "remote" &&
         (!remoteAvailable || session?.id !== currentSession.current))
     )
       return;
     const epoch = ++epochs.current[side];
-    const sessionId = session?.id;
-    const scopeKey =
-      side === "local" ? "local" : `host:${session?.hostId || "none"}`;
-    const binding = side === "local" ? "" : remoteBinding;
+    const sessionId = endpointId(side);
+    const { key: scopeKey, binding } = scopeFor(side);
     attempts.current[side] = { path, historyIndex };
     if (!background) setBusy((p) => ({ ...p, [side]: true }));
     setErrors((p) => ({ ...p, [side]: "" }));
@@ -473,7 +513,7 @@ export function FilesView({
           path,
         });
         if (
-          epoch !== epochs.current[side] ||
+          epoch !== epochs.current[side] || position !== currentPosition.current ||
           (side === "remote" && sessionId !== currentSession.current)
         )
           return;
@@ -540,7 +580,7 @@ export function FilesView({
       remoteAvailable && position.connection === session?.id
         ? position.remote.listing
         : undefined;
-    setLocal(position.local.listing || { path: "", entries: [] });
+    setLocal((peerReady && position.local.listing) || { path: "", entries: [] });
     setRemote(cachedRemote || { path: ".", entries: [] });
     setRemoteOwner(cachedRemote ? session?.id : undefined);
     setSelected({
@@ -556,7 +596,7 @@ export function FilesView({
     setBusy({ local: false, remote: false });
     setForm(null);
     setDeleting(null);
-  }, [position, session?.id, remoteAvailable, profileChanged]);
+  }, [position, session?.id, remoteAvailable, profileChanged, peerReady]);
   useLayoutEffect(() => {
     if (!visible) {
       lastRemoteView.current = undefined;
@@ -566,8 +606,11 @@ export function FilesView({
     needsListing.current = false;
     const recent = session && listedLayoutFolders(session.id);
     if (session && restoredFolders) consumeLayoutFolders(session.id, restoredFolders);
-    if (initialize || restoredFolders?.local) {
-      void load("local", restoredFolders?.local || position.local.listing?.path || recent?.local || scopeFor("local").lastPath || defaultDirectory,
+    if (peerReady && (initialize || (!peer && restoredFolders?.local))) {
+      const initialPath = peer
+        ? position.local.listing?.path || scopeFor("local").lastPath || "."
+        : restoredFolders?.local || position.local.listing?.path || recent?.local || scopeFor("local").lastPath || defaultDirectory;
+      void load("local", initialPath,
         undefined, !!position.local.listing);
     }
     if (!remoteAvailable) return;
@@ -590,7 +633,7 @@ export function FilesView({
     const pendingElsewhere = busy.remote && attempts.current.remote.path !== requested;
     if (initialize || !alreadyListed || pendingElsewhere)
       load("remote", requested, undefined, alreadyListed, followed && !restoredFolders?.remote ? "follow" : "navigation");
-  }, [position, session?.id, remoteAvailable, profileChanged, visible, reportedDirectory, followTerminalFolder, restoredFolders]);
+  }, [position, session?.id, remoteAvailable, profileChanged, peerReady, visible, reportedDirectory, followTerminalFolder, restoredFolders]);
   const returnFocus = useRef<{ from: Element | null } | null>(null);
   useLayoutEffect(() => {
     if (!visible && editorReadSession.current !== undefined) {
@@ -653,8 +696,15 @@ export function FilesView({
   }, [visible, focused, position, session?.id, remoteAvailable, busy, remoteOwner]);
   useEffect(() => {
     const openTabs = new Set(sessions.map(sessionTabId));
-    for (const key of positions.current.keys())
-      if (key && !openTabs.has(key)) positions.current.delete(key);
+    for (const [key, cached] of positions.current)
+      if (cached.tabId && !openTabs.has(cached.tabId)) positions.current.delete(key);
+    setPeers(previous => {
+      const stale = Object.keys(previous).filter(key => !openTabs.has(key));
+      if (!stale.length) return previous;
+      const next = { ...previous };
+      for (const key of stale) delete next[key];
+      return next;
+    });
   }, [sessions]);
   useEffect(() => {
     setInsert(null);
@@ -668,7 +718,7 @@ export function FilesView({
     }
     if (session?.id !== id || !remoteAvailable) return;
     setPendingPair(null);
-    if (session.hostId !== pair.hostId || remoteBinding !== pair.binding)
+    if (peer || session.hostId !== pair.hostId || remoteBinding !== pair.binding)
       return;
     void load("local", pair.local);
     void load("remote", pair.remote);
@@ -711,7 +761,7 @@ export function FilesView({
       );
   };
   const incoming = {
-    local: incomingTransfers(transfers, "local", local.path, session?.id),
+    local: incomingTransfers(transfers, peer ? "remote" : "local", local.path, peer ? (peerReady ? peer.id : undefined) : session?.id),
     remote: incomingTransfers(
       transfers,
       "remote",
@@ -733,19 +783,21 @@ export function FilesView({
       pane.busy ||
       pane.error ||
       !context.visible ||
+      (side === "local" && !peerReady) ||
       (side === "remote" && !context.remoteReady)
     )
       return;
     const { epoch, path } = pane;
     let stale = false;
     void request<PaneData>("file_list", {
-      ...payload(side, context.sessionId),
+      ...payload(side, endpointId(side)),
       path,
     })
       .then((result) => {
         const latest = readDragContext();
         if (
           stale ||
+          currentPosition.current !== position ||
           latest.panes[side].epoch !== epoch ||
           latest.panes[side].path !== path ||
           latest.sessionId !== context.sessionId ||
@@ -766,7 +818,7 @@ export function FilesView({
   const remoteCompleted = completionKey(incoming.remote);
   useEffect(() => {
     if (localCompleted !== "[]") return refreshCompleted("local");
-  }, [localCompleted, local.path, visible, busy.local, session?.id]);
+  }, [localCompleted, local.path, visible, busy.local, session?.id, position, peerReady]);
   useEffect(() => {
     if (remoteCompleted !== "[]") return refreshCompleted("remote");
   }, [
@@ -779,7 +831,7 @@ export function FilesView({
     session?.id,
   ]);
   const conflicts = useConflictReview(
-    transfers.filter((t) => t.sessionId === session?.id),
+    transfers.filter((t) => t.sessionId === session?.id || (peer && t.direction === "relay" && t.sessionId === peer.id && t.sourceSessionId === session?.id)),
     visible && focused &&
       !!remoteAvailable &&
       !chooserOpen &&
@@ -825,9 +877,9 @@ export function FilesView({
     void queueTransfers(plan, false);
   });
   const nativeDrop = useNativeFileDrop(pageRef, visible && remoteAvailable ? session?.id : undefined,
-    protocol, readDragContext, plan => queueTransfers(plan, false), notify);
+    peer ? "sftp" : protocol, readDragContext, plan => queueTransfers(plan, false), notify);
   const drag = fileDrag.drag;
-  const dragHeading = drag && fileDropHeading(drag.snapshot.side, drag.snapshot.entries.length, drag.snapshot.sessionName);
+  const dragHeading = drag && fileDropHeading(drag.snapshot.side, drag.snapshot.entries.length, drag.snapshot.sessionName, drag.snapshot.peer?.name);
   const dragPath = drag?.destination || "Choose a folder in the opposite panel. Press Escape to cancel.";
   const open = async (side: Side, entry: FileEntry, target: "file" | "sql" = "file") => {
     if (entry.isDir) {
@@ -837,10 +889,10 @@ export function FilesView({
     setEditorBusy(true);
     setEditorError("");
     const epoch = ++editorReadEpoch.current;
-    const sessionId = side === "remote" ? session?.id : undefined;
+    const sessionId = endpointId(side);
     editorReadSession.current = sessionId || "";
     const serverName =
-      side === "remote" ? displayHost?.name || session?.name : undefined;
+      side === "remote" ? displayHost?.name || session?.name : peer?.name;
     try {
       const file = await request<{ content: string; revision: string }>(
         "file_read",
@@ -883,8 +935,7 @@ export function FilesView({
       const result = await request<{ revision: string; backupPath: string }>(
         "file_save",
         {
-          side: editor.side,
-          sessionId: editor.sessionId,
+          ...payload(editor.side, editor.sessionId),
           path: editor.path,
           content: editor.content,
           revision: editor.revision,
@@ -904,8 +955,7 @@ export function FilesView({
           : "File saved",
       );
       if (
-        editor.side === "local" ||
-        editor.sessionId === currentSession.current
+        editor.sessionId === endpointId(editor.side)
       )
         void load(editor.side);
     } catch (e) {
@@ -932,13 +982,13 @@ export function FilesView({
       if (form.action === "mkdir")
         await request("file_mkdir", {
           ...payload(form.side, form.sessionId),
-          path: joinPath(base, form.value, form.side),
+          path: joinPath(base, form.value, form.sessionId ? "remote" : form.side),
         });
       if (form.action === "rename")
         await request("file_rename", {
           ...payload(form.side, form.sessionId),
           path: form.entry!.path,
-          destination: joinPath(base, form.value, form.side),
+          destination: joinPath(base, form.value, form.sessionId ? "remote" : form.side),
         });
       if (form.action === "chmod")
         await request("file_chmod", {
@@ -954,6 +1004,7 @@ export function FilesView({
     }
   };
   const readyToCompare =
+    peerReady &&
     remoteAvailable &&
     remoteOwner === session?.id &&
     !!local.path &&
@@ -962,7 +1013,7 @@ export function FilesView({
     !errors.local &&
     !errors.remote;
   const comparing = comparisonEnabled && readyToCompare;
-  const checksumPair = readyToCompare ? checksumFiles(local.entries, remoteDirectory.entries, selected) : undefined;
+  const checksumPair = readyToCompare && !peer ? checksumFiles(local.entries, remoteDirectory.entries, selected) : undefined;
   const comparisons = {
     local: comparing
       ? compareFolderEntries(local.entries, remoteDirectory.entries)
@@ -977,7 +1028,7 @@ export function FilesView({
         title="File manager"
         description={
           session
-            ? `Local files ↔ ${session.name}`
+            ? `${peer?.name || "Local files"} ↔ ${session.name}`
             : "Browse local files and connect a host to access remote files."
         }
       >
@@ -995,7 +1046,9 @@ export function FilesView({
         <label className="inline-field">
           <span>Transfer with</span>
           <select
-            value={protocol}
+            value={peer ? "sftp" : protocol}
+            disabled={!!peer}
+            title={peer ? "Host-to-host transfers use SFTP" : undefined}
             onChange={(e) => setProtocol(e.target.value)}
           >
             <option value="sftp">SFTP</option>
@@ -1003,7 +1056,7 @@ export function FilesView({
           </select>
         </label>
         <Button onClick={() => onTransfer()}>Transfer queue</Button>
-        <Button onClick={() => setPairsOpen(true)}>
+        <Button disabled={!!peer} title={peer ? "Folder pairs use This computer and one host" : undefined} onClick={() => setPairsOpen(true)}>
           <FolderHeart size={16} />
           Folder pairs
         </Button>
@@ -1016,11 +1069,15 @@ export function FilesView({
         </Button>
       </PageHeader>
       <div className="file-panes">
-        {(["local", "remote"] as Side[]).map((side) => (
+        {(["local", "remote"] as Side[]).map((side) => {
+          const paneHost = side === "remote" ? displayHost : peer?.host;
+          const name = side === "remote" ? session?.name : peer?.name;
+          return (
           <FilePane
             key={JSON.stringify([
               side,
               tabId,
+              peer?.id,
               remoteBinding,
               side === "remote" && remoteAvailable,
             ])}
@@ -1035,24 +1092,27 @@ export function FilesView({
             rememberFocus={(target) => {
               position.focus = { side, ...target };
             }}
-            remoteHost={displayHost}
+            remoteHost={paneHost}
+            peerMode={!!peer}
+            transferTarget={peer ? (side === "local" ? session?.name : peer.name) : undefined}
             dragHelpId={dragHelpId}
             nativeDrop={side === "remote" ? nativeDrop : null}
-            remoteName={session && sessionHostLabel(session.name, displayHost)}
+            remoteName={name && sessionHostLabel(name, paneHost)}
             remoteAddress={
-              displayHost
-                ? serverAddress(displayHost.username, displayHost.hostname, displayHost.port !== 22 ? displayHost.port : undefined)
+              paneHost
+                ? serverAddress(paneHost.username, paneHost.hostname, paneHost.port !== 22 ? paneHost.port : undefined)
                 : undefined
             }
-            environmentLabel={displayHost?.environmentLabel}
+            environmentLabel={paneHost?.environmentLabel}
             chooseServer={() => {
               setServerQuery("");
+              setChooserSide(side);
               setChooserOpen(true);
             }}
             width={side === "local" ? paneWidth : 100 - paneWidth}
             listChildren={(path) =>
               request<PaneData>("file_list", {
-                ...payload(side, session?.id),
+                ...payload(side, endpointId(side)),
                 path,
               })
             }
@@ -1130,10 +1190,10 @@ export function FilesView({
               saveFolderScope(toggleFolderBookmark(scopeFor(side), path))
             }
             home={() =>
-              void load(side, side === "local" ? defaultDirectory : ".")
+              void load(side, side === "local" && !peer ? defaultDirectory : ".")
             }
             comparison={comparisons[side]}
-            enabled={side === "local" || remoteAvailable}
+            enabled={side === "local" ? peerReady : remoteAvailable}
             canTransfer={fileContextReady(readDragContext())}
             load={(path) => void load(side, path)}
             open={(entry) => void open(side, entry)}
@@ -1141,7 +1201,7 @@ export function FilesView({
             rename={(entry) =>
               setForm({
                 side,
-                sessionId: session?.id,
+                sessionId: endpointId(side),
                 path: data(side).path,
                 action: "rename",
                 entry,
@@ -1151,7 +1211,7 @@ export function FilesView({
             mkdir={() =>
               setForm({
                 side,
-                sessionId: session?.id,
+                sessionId: endpointId(side),
                 path: data(side).path,
                 action: "mkdir",
                 value: "",
@@ -1160,7 +1220,7 @@ export function FilesView({
             chmod={(entry) =>
               setForm({
                 side,
-                sessionId: session?.id,
+                sessionId: endpointId(side),
                 path: data(side).path,
                 action: "chmod",
                 entry,
@@ -1168,8 +1228,8 @@ export function FilesView({
               })
             }
             remove={(entries) =>
-              setDeleting({ side, sessionId: session?.id, entries, folder: data(side).path,
-                location: side === "local" ? "This computer" : session?.name || "Remote server" })
+              setDeleting({ side, sessionId: endpointId(side), entries, folder: data(side).path,
+                location: name || (side === "local" ? "This computer" : "Remote server") })
             }
             startDrag={(event, path) =>
               fileDrag.startDrag(event, side, path, selected[side], protocol)
@@ -1181,13 +1241,14 @@ export function FilesView({
                 : []
             }
           />
-        ))}
+          );
+        })}
       </div>
       {(comparisonEnabled || checksumPair) && (
         <div className="file-compare-note checksum-actions">
           <span>{comparisonEnabled && (!comparing ? "Waiting for both folders to load. " : "Comparing names, types and sizes. ")}
-            {checksumPair ? `Compare contents of ${checksumPair.local.name}${checksumPair.remote.name !== checksumPair.local.name ? ` and ${checksumPair.remote.name}` : ""}.` : "Select one file per pane or one file with the same name on both sides."}</span>
-          {visible && session && <FileChecksum key={JSON.stringify([session.id, checksumPair?.local.path, checksumPair?.remote.path])} sessionId={session.id} pair={checksumPair} />}
+            {checksumPair ? `Compare contents of ${checksumPair.local.name}${checksumPair.remote.name !== checksumPair.local.name ? ` and ${checksumPair.remote.name}` : ""}.` : !peer && "Select one file per pane or one file with the same name on both sides."}</span>
+          {!peer && visible && session && <FileChecksum key={JSON.stringify([session.id, checksumPair?.local.path, checksumPair?.remote.path])} sessionId={session.id} pair={checksumPair} />}
         </div>
       )}
       {fileDrag.drag &&
@@ -1200,7 +1261,7 @@ export function FilesView({
               transform: `translate3d(${fileDrag.drag.x}px,${fileDrag.drag.y}px,0)`,
             }}
           >
-            {fileDrag.drag.snapshot.side === "local" ? (
+            {peer ? <Server size={18} /> : fileDrag.drag.snapshot.side === "local" ? (
               <Upload size={18} />
             ) : (
               <Download size={18} />
@@ -1313,8 +1374,8 @@ export function FilesView({
       <Modal
         open={chooserOpen}
         onOpenChange={setChooserOpen}
-        title="Choose remote server"
-        description="Select a connected session or connect to a saved host."
+        title={choosingPeer ? "Choose left endpoint" : "Choose remote server"}
+        description={choosingPeer ? "Browse this computer or choose a second host to copy files between servers." : "Select a connected session or connect to a saved host."}
       >
         <div className="palette-search">
           <Search size={18} />
@@ -1355,6 +1416,13 @@ export function FilesView({
             ].focus();
           }}
         >
+          {choosingPeer && "this computer".includes(serverQuery.trim().toLowerCase()) && (
+            <button type="button" className={`picker-card palette-result ${!peer ? "selected" : ""}`}
+              aria-current={!peer ? "true" : undefined} onClick={() => selectPeer()}>
+              <HardDrive size={18} /><span style={{ flex: 1 }}>This computer</span>
+              {!peer && <Check size={16} aria-label="Selected" />}
+            </button>
+          )}
           {matchingSessions.length > 0 && (
             <div className="palette-group">Connected sessions</div>
           )}
@@ -1363,12 +1431,13 @@ export function FilesView({
             return (
               <button
                 type="button"
-                className={`picker-card palette-result ${session?.id === item.id ? "selected" : ""}`}
+                className={`picker-card palette-result ${selectedEndpointId === item.id ? "selected" : ""}`}
                 key={item.id}
-                aria-current={session?.id === item.id ? "true" : undefined}
+                aria-current={selectedEndpointId === item.id ? "true" : undefined}
                 onClick={() => {
                   setChooserOpen(false);
-                  onSelectSession(item.id);
+                  if (choosingPeer) selectPeer(item);
+                  else chooseRightSession(item);
                 }}
               >
                 <Server size={18} />
@@ -1380,7 +1449,7 @@ export function FilesView({
                       : "Connected SSH session"}
                   </small>
                 </span>
-                {session?.id === item.id && (
+                {selectedEndpointId === item.id && (
                   <Check size={16} aria-label="Selected" />
                 )}
               </button>
@@ -1399,7 +1468,8 @@ export function FilesView({
                   (item) => item.hostId === host.id,
                 );
                 setChooserOpen(false);
-                if (connected) onSelectSession(connected.id);
+                if (connected && choosingPeer) selectPeer(connected);
+                else if (connected) chooseRightSession(connected);
                 else
                   onConnectHost(
                     host,
@@ -1407,6 +1477,10 @@ export function FilesView({
                       (item) =>
                         item.hostId === host.id && item.status === "connected",
                     ),
+                    choosingPeer && session ? id => {
+                      selectPeer({ id, hostId: host.id, name: host.name });
+                      onSelectSession(session.id);
+                    } : id => keepLeftEndpoint(session?.hostId === host.id && session.status !== "connected" ? tabId : id),
                   );
               }}
             >
@@ -1424,7 +1498,7 @@ export function FilesView({
             <div className="compact-empty">
               {serverQuery
                 ? "No matching servers"
-                : "Save a host to browse its remote files."}
+                : choosingPeer ? session ? "Connect or save another SSH host to copy between servers." : "Choose a server in the right panel first." : "Save a host to browse its remote files."}
             </div>
           )}
         </div>
@@ -1521,7 +1595,7 @@ export function FilesView({
         <div className="editor-toolbar">
           <span>
             {editor?.content !== editor?.saved ? "Unsaved changes" : "Saved"} ·{" "}
-            {editor?.side === "remote"
+            {editor?.sessionId
               ? `Remote file on ${editor.serverName || "original session"}`
               : "Local file"}
           </span>
@@ -1596,6 +1670,8 @@ function FilePane({
   onToggleFollow,
   remoteName,
   remoteHost,
+  peerMode,
+  transferTarget,
   dragHelpId,
   nativeDrop,
   remoteAddress,
@@ -1648,6 +1724,8 @@ function FilePane({
   ) => void;
   remoteName?: string;
   remoteHost?: Host;
+  peerMode: boolean;
+  transferTarget?: string;
   dragHelpId: string;
   nativeDrop: NativeDropPreview | null;
   remoteAddress?: string;
@@ -1789,24 +1867,19 @@ function FilePane({
       style={{ width: `${width}%` }}
     >
       <header className="file-pane-header">
-        {side === "local" ? (
-          <h2>
-            <HardDrive size={17} /> This computer
-          </h2>
-        ) : (
           <Button
             variant="ghost"
             onClick={chooseServer}
             aria-haspopup="dialog"
-            aria-label={`Remote server${remoteName ? `, ${remoteName}` : ""}. Choose server`}
-            title={remoteName ? [remoteName, remoteAddress, "Choose remote server"].filter(Boolean).join("\n") : "Choose remote server"}
+            aria-label={side === "local" ? `Left endpoint, ${remoteName || "This computer"}. Choose server` : `Remote server${remoteName ? `, ${remoteName}` : ""}. Choose server`}
+            title={side === "local" ? "Choose this computer or another SSH host" : "Choose remote server"}
             style={{
               minWidth: 0,
               justifyContent: "flex-start",
               textAlign: "left",
             }}
           >
-            {remoteHost ? <HostMark host={remoteHost}/> : <Server size={17} style={{ flexShrink: 0 }} />}
+            {remoteHost ? <HostMark host={remoteHost}/> : side === "local" && !peerMode ? <HardDrive size={17}/> : <Server size={17} style={{ flexShrink: 0 }} />}
             <span style={{ display: "grid", minWidth: 0 }}>
               <strong
                 style={{
@@ -1815,7 +1888,7 @@ function FilePane({
                   whiteSpace: "nowrap",
                 }}
               >
-                {remoteName || "Remote server"}
+                {remoteName || (side === "local" ? "This computer" : "Remote server")}
               </strong>
               {remoteAddress && (
                 <small
@@ -1837,7 +1910,6 @@ function FilePane({
             </span>
             <ChevronDown size={15} style={{ flexShrink: 0 }} />
           </Button>
-        )}
         <div className="toolbar">
           {onToggleFollow && (
             <IconButton
@@ -1885,7 +1957,7 @@ function FilePane({
           <IconButton
             label={`New ${side} folder`}
             onClick={mkdir}
-            disabled={!enabled}
+            disabled={!enabled || busy || !!error || !data.path}
           >
             <FolderPlus size={16} />
           </IconButton>
@@ -1940,7 +2012,7 @@ function FilePane({
       </div>
       <form
         className={`path-bar${nativeDrop?.onPathBar && path === data.path ? " file-drop-target" : ""}`}
-        data-file-drop-path={side === "remote" && enabled && !busy && !error && data.path && path === data.path ? side : undefined}
+        data-file-drop-path={(side === "remote" || peerMode) && enabled && !busy && !error && data.path && path === data.path ? side : undefined}
         onSubmit={(e) => {
           e.preventDefault();
           load(path);
@@ -1955,14 +2027,14 @@ function FilePane({
         </IconButton>
         <input
           aria-label={`${side} directory path`}
-          title={side === "remote" && enabled
-            ? path === data.path ? "Drop files or folders here to upload to this directory" : "Press Enter to open this directory before dropping files here"
+            title={(side === "remote" || peerMode) && enabled
+              ? path === data.path ? peerMode ? "Drop files or folders here to copy to this directory" : "Drop files or folders here to upload to this directory" : "Press Enter to open this directory before dropping files here"
             : undefined}
           value={path}
           onChange={(e) => setPath(e.target.value)}
           disabled={!enabled}
           placeholder={
-            side === "local" ? "Local home directory" : "Connect to browse"
+              side === "local" && !peerMode ? "Local home directory" : "Connect to browse"
           }
         />
       </form>
@@ -2033,8 +2105,8 @@ function FilePane({
       {!enabled ? (
         <Empty
           icon={<Server size={25} />}
-          title="Choose a remote server"
-          description="Choose a server from the remote panel heading to browse its files."
+          title={side === "local" && peerMode ? "Host unavailable" : "Choose a remote server"}
+          description={side === "local" && peerMode ? "Choose another connected session or reconnect this host." : "Choose a server from the remote panel heading to browse its files."}
           action={<Button onClick={chooseServer}>Choose server</Button>}
         />
       ) : (
@@ -2104,7 +2176,7 @@ function FilePane({
                 const name = (
                   item.renamedPaths?.[item.destination] || item.destination
                 )
-                  .split(side === "local" ? /[\\/]/ : "/")
+                  .split(side === "local" && !peerMode ? /[\\/]/ : "/")
                   .pop();
                 const percent = item.totalBytes
                   ? Math.min(
@@ -2116,7 +2188,7 @@ function FilePane({
                   : 0;
                 return (
                   <div className="file-inline-transfer" key={item.id}>
-                    {item.direction === "upload" ? (
+                    {item.direction === "relay" ? <Server size={15} /> : item.direction === "upload" ? (
                       <Upload size={15} />
                     ) : (
                       <Download size={15} />
@@ -2162,7 +2234,7 @@ function FilePane({
                     <>
                       <strong>This folder is empty</strong>
                       <span>
-                        {side === "local"
+                        {peerMode ? "Drop files or folders from the other host here." : side === "local"
                           ? "Create a folder here or download files from the remote panel."
                           : "Create a folder here or upload files from the local panel."}
                       </span>
@@ -2235,7 +2307,7 @@ function FilePane({
                   <span>{e.isDir ? "" : formatBytes(e.size)}</span>
                   <span
                     title={
-                      side === "remote"
+                      side === "remote" || peerMode
                         ? `Permissions ${e.permissions}`
                         : undefined
                     }
@@ -2288,7 +2360,7 @@ function FilePane({
           >
             <Pencil size={15} />
           </IconButton>
-          {side === "remote" && (
+            {(side === "remote" || peerMode) && (
             <IconButton
               label="Change permissions"
               disabled={busy || chosen.length !== 1}
@@ -2309,17 +2381,17 @@ function FilePane({
             disabled={busy || !chosen.length || !canTransfer}
             onClick={() => transfer(chosen)}
           >
-            {side === "local" ? <Upload size={15} /> : <Download size={15} />}{" "}
-            {side === "local" ? "Upload" : "Download"}
+            {peerMode ? (side === "local" ? <ArrowRight size={15}/> : <ArrowLeft size={15}/>) : side === "local" ? <Upload size={15} /> : <Download size={15} />}{" "}
+            {peerMode ? `Copy to ${transferTarget || "host"}` : side === "local" ? "Upload" : "Download"}
           </Button>
         </div>
       </div>
       <Modal
         open={locationsOpen}
         onOpenChange={setLocationsOpen}
-        title={`${side === "local" ? "Local" : "Remote"} folder locations`}
+        title={`${peerMode ? remoteName || "Host" : side === "local" ? "Local" : "Remote"} folder locations`}
         description={
-          side === "local"
+          side === "local" && !peerMode
             ? "Bookmarks and recent folders on this computer."
             : `Bookmarks and recent folders for ${remoteName || "this server"}.`
         }
@@ -2450,15 +2522,15 @@ export function Transfers({
   const shown = transfers.filter(
     (t) => filter === "all" || t.status === filter,
   );
-  const action = async (name: string, id: string) => {
+  const action = async (name: string, item: Transfer) => {
     try {
       const preferred =
-        name === "transfer_retry" || name === "transfer_resume"
+        item.direction !== "relay" && (name === "transfer_retry" || name === "transfer_resume")
           ? sessionId
           : undefined;
       await request(
         name,
-        preferred ? { id, preferredSessionId: preferred } : { id },
+        preferred ? { id: item.id, preferredSessionId: preferred } : { id: item.id },
       );
       refresh();
     } catch (e) {
@@ -2509,7 +2581,7 @@ export function Transfers({
           {shown.map((t) => (
             <div className="transfer-row" key={t.id}>
               <div className="transfer-icon">
-                {t.direction === "upload" ? (
+                {t.direction === "relay" ? <Server size={20} aria-label="Host to host" /> : t.direction === "upload" ? (
                   <Upload size={20} />
                 ) : (
                   <Download size={20} />
@@ -2522,8 +2594,9 @@ export function Transfers({
                     {t.status}
                   </span>
                 </div>
-                <p title={t.destination}>
-                  {t.renamedPaths?.[t.destination] || t.destination}
+                {t.direction === "relay" && <p title={t.source}>{t.sourceHostName} · {t.source}</p>}
+                <p title={t.renamedPaths?.[t.destination] || t.destination}>
+                  {t.direction === "relay" && `→ ${t.destinationHostName} · `}{t.renamedPaths?.[t.destination] || t.destination}
                 </p>
                 <progress
                   value={
@@ -2569,7 +2642,7 @@ export function Transfers({
                 {["failed", "cancelled"].includes(t.status) && t.resumable && (
                   <Button
                     variant="primary"
-                    onClick={() => void action("transfer_resume", t.id)}
+                    onClick={() => void action("transfer_resume", t)}
                   >
                     Resume
                   </Button>
@@ -2580,7 +2653,7 @@ export function Transfers({
                   </Button>
                 )}
                 {["failed", "cancelled"].includes(t.status) && (
-                  <Button onClick={() => void action("transfer_retry", t.id)}>
+                  <Button onClick={() => void action("transfer_retry", t)}>
                     <RefreshCw size={14} />
                     {t.resumable ? "Restart" : "Retry"}
                   </Button>
@@ -2590,7 +2663,7 @@ export function Transfers({
                 ) && (
                   <IconButton
                     label="Cancel transfer"
-                    onClick={() => void action("transfer_cancel", t.id)}
+                    onClick={() => void action("transfer_cancel", t)}
                   >
                     <X size={17} />
                   </IconButton>

@@ -42,6 +42,7 @@ Screenshots from RC8 with sample connections.
 
 - **SSH** with saved hosts, tabs, split panes, and server fingerprint verification. Sign in with a password, an OpenSSH private key, or an SSH agent.
 - **SFTP and SCP** for transfers between your computer and a remote host. Drop files or folders from Explorer onto the remote path field to upload to the open directory. Check transfer progress and resume eligible interrupted SFTP transfers.
+- **Host-to-host SFTP** for copying files or folders between two connected SSH sessions. Open **SFTP**, select a server from the left pane's **This computer** menu and choose the other server on the right. Drag in either direction or use the pane's copy button. VEXSSH streams the data through your computer, so keep the app and both connections open until the copy finishes.
 - **Serial** for Windows COM ports. The port list updates when a USB adapter is plugged in or removed. The selector shows device information reported by Windows. Save the baud rate, parity, stop bits, and flow control for each device.
 - **Databases** with a query editor and object browser. Connect directly or through an existing SSH session. SQLite opens a local file.
 
@@ -71,17 +72,17 @@ Open **Download for Windows** to see the current release at the top of GitHub Re
 - **Portable** runs directly on a computer that already has WebView2.
 - **SHA256SUMS.txt** contains the checksums for that version.
 
-The RC12 Windows binaries are unsigned. Download from the release page and compare the file with its entry in **SHA256SUMS.txt** using PowerShell:
+The Windows 1.1.0 binaries are unsigned. Download from the release page and compare the file with its entry in **SHA256SUMS.txt** using PowerShell.
 
 ```powershell
-Get-FileHash .\VEXSSH-1.0.0-rc.12-Windows-x64-Online-Setup.exe -Algorithm SHA256
+Get-FileHash .\VEXSSH-1.1.0-Windows-x64-Online-Setup.exe -Algorithm SHA256
 ```
 
 A matching hash confirms that the file matches the published build. Windows SmartScreen and Chrome may still display a reputation warning for an unfamiliar download.
 
 ## Application data
 
-The RC12 Windows download uses the same profile and vault locations as the RC7 through RC11 installers. To build the Windows release with those locations, check out the `v1.0.0-rc.12` tag. Development builds from `main` use their own storage.
+The 1.1.0 Windows download uses the same profile and vault locations as the previous Windows installers. To build this release with those locations, check out the `v1.1.0` tag. Development builds from `main` use their own storage.
 
 ## Run on Windows
 

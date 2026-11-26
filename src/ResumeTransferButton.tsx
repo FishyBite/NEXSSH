@@ -29,7 +29,7 @@ export function ResumeTransferButton({ session, items, notify, onQueued }: {
     <DropdownMenu.Portal><DropdownMenu.Content className="terminal-menu transfer-recovery-menu" align="start" sideOffset={4}>
       <DropdownMenu.Label className="terminal-menu-label">Choose a file to resume</DropdownMenu.Label>
       {items.map((item) => <DropdownMenu.Item key={item.id} title={item.destination}
-        onSelect={() => void resume(item)}>{item.direction === "download" ? "Download" : "Upload"} {item.source}
+        onSelect={() => void resume(item)}>{item.direction === "relay" ? "Copy" : item.direction === "download" ? "Download" : "Upload"} {item.source}
         <small>{item.destination}</small></DropdownMenu.Item>)}
     </DropdownMenu.Content></DropdownMenu.Portal>
   </DropdownMenu.Root>;

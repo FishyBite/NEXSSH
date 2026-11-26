@@ -54,7 +54,7 @@ const compiled = await build({
         const [visible,setVisible]=useState(true);
         const [transfers,setTransfers]=useState([]);
         const [queue,showQueue]=useState(false);
-        Object.assign(state,{setTransfers,showQueue,setSessions});
+        Object.assign(state,{setTransfers,showQueue,setSessions,setHosts});
         state.hosts=hosts;state.sessions=sessions;state.select=setSelected;state.setVisible=setVisible;
         state.changeHost=(id,patch)=>setHosts(current=>current.map(host=>host.id===id?{...host,...patch}:host));
         state.disconnect=()=>setSessions(current=>current.map(session=>session.id===selected?{...session,status:'disconnected'}:session));
@@ -173,6 +173,70 @@ async function run(name, exercise, options = {}) {
 }
 
 try {
+  async function chooseLeft(page, name) {
+    await page.getByRole("button", {name: /^Left endpoint,/}).click();
+    const picker = page.getByRole("dialog", {name: "Choose left endpoint"});
+    await picker.getByRole("button", {name: new RegExp(name)}).first().click();
+    await expect(picker).toBeHidden();
+  }
+  const relay = (sourceSessionId, destinationSessionId, source, destination) => ({
+    ...plan("relay", source, destination, "sftp", destinationSessionId), sourceSessionId,
+  });
+  await run("host-to-host drag, reverse selection and return to desktop", async page => {
+    await chooseLeft(page, "Beta");
+    await expect(directoryPath(page, "local")).toHaveValue("/srv/shared");
+    await visit(page, "local", "/srv/beta");
+    await visit(page, "remote", "/srv/alpha");
+    await drag(page, "local", () => center(file(page, "remote", "docs")));
+    const first = relay("beta-1", "alpha-1", "/srv/beta/one.txt", "/srv/alpha/docs/one.txt");
+    await expectTransfers(page, [first]);
+    await pane(page, "remote").getByRole("checkbox", {name: "Select docs", exact: true}).check();
+    await pane(page, "remote").getByRole("checkbox", {name: "Select two.txt", exact: true}).check();
+    await pane(page, "remote").getByRole("button", {name: "Copy to Beta", exact:true}).click();
+    const reverse = ["docs", "two.txt"].map(name => relay("alpha-1", "beta-1", "/srv/alpha/" + name, "/srv/beta/" + name));
+    await expectTransfers(page, [first, ...reverse]);
+    await chooseLeft(page, "This computer");
+    await expect(directoryPath(page, "local")).toHaveValue("C:/local");
+    await expect(directoryPath(page, "remote")).toHaveValue("/srv/shared");
+    await drag(page, "local", () => background(page, "remote"));
+    await expectTransfers(page, [first, ...reverse, plan("upload", "C:/local/one.txt", "/srv/shared/one.txt")]);
+  });
+  await run("disconnected host-to-host source cannot start a pending drag", async page => {
+    await chooseLeft(page, "Beta");
+    await expect(directoryPath(page, "local")).toHaveValue("/srv/shared");
+    await begin(page, "local");
+    await page.evaluate(() => fixture.setSessions(items => items.map(item => item.id === "beta-1" ? {...item, status:"disconnected"} : item)));
+    await move(page, await background(page, "remote"));
+    await page.mouse.up();
+    await expectTransfers(page, []);
+    await expect(pane(page, "local").getByRole("button", {name: /^Copy to /})).toBeDisabled();
+  });
+  await run("host-to-host right picker keeps the left host and queue identifies both endpoints", async page => {
+    await page.evaluate(() => {
+      fixture.setHosts(items => [...items, {...items[0], id:"gamma", name:"Gamma", hostname:"gamma.example.invalid"}]);
+      fixture.setSessions(items => [...items, {...items[0], id:"gamma-1", name:"Gamma", hostId:"gamma"}]);
+    });
+    await chooseLeft(page, "Beta");
+    await page.getByRole("button", {name:"Remote server, Alpha. Choose server"}).click();
+    const picker = page.getByRole("dialog", {name:"Choose remote server"});
+    await expect(picker.getByRole("button", {name:/Beta/})).toHaveCount(0);
+    await picker.getByRole("button", {name:/Gamma/}).first().click();
+    await expect(page.getByRole("button", {name:"Left endpoint, Beta. Choose server"})).toBeVisible();
+    await expect(page.getByRole("button", {name:"Remote server, Gamma. Choose server"})).toBeVisible();
+    await visit(page, "local", "/srv/beta");
+    await visit(page, "remote", "/srv/gamma");
+    await drag(page, "local", () => background(page, "remote"));
+    await expectTransfers(page, [relay("beta-1", "gamma-1", "/srv/beta/one.txt", "/srv/gamma/one.txt")]);
+    await page.evaluate(() => {
+      const {payload} = fixture.calls.find(call => call.action === "transfer_start");
+      fixture.setTransfers([{...payload, id:"relay", sourceHostName:"Beta", destinationHostName:"Gamma",
+        status:"completed", startedAt:1, totalBytes:4, transferredBytes:4}]);
+      fixture.showQueue(true);
+    });
+    const row = page.locator(".transfer-row");
+    await expect(row).toContainText("Beta · /srv/beta/one.txt");
+    await expect(row).toContainText("→ Gamma · /srv/gamma/one.txt");
+  });
   await run("session positions preserve both folders, selection, focus and scroll between same-host tabs", async page => {
     await page.evaluate(() => {
       fixture.overflowSide = "remote";

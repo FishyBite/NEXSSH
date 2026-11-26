@@ -106,6 +106,11 @@ export interface KeyInfo {
 export interface Transfer {
   id: string;
   sessionId: string;
+  sourceSessionId?: string;
+  sourceHostId?: string;
+  hostId?: string;
+  sourceHostName?: string;
+  destinationHostName?: string;
   tabId?: string | null;
   routeToken?: string | null;
   source: string;

@@ -52,6 +52,47 @@ function context(): FileDragContext {
 }
 
 describe("cross-panel file transfer snapshots", () => {
+  function withPeer(): FileDragContext {
+    const current = context();
+    current.peer = { id: "ssh-b", name: "B", binding: "verified-route-b", ready: true };
+    current.panes.local = { ...current.panes.local, path: "/srv/data",
+      entries: [file("/srv/data/archive"), file("/srv/data/folder", true)] };
+    return current;
+  }
+  it("copies a file and a directory from the left host to a folder on the right host over SFTP", () => {
+    const current = withPeer();
+    const snapshot = captureFileDrag(current, "local", "/srv/data/archive", ["/srv/data/archive", "/srv/data/folder"], "scp")!;
+    const plan = acceptFileDrop(snapshot, current, { side: "remote", directory: "/home/test/incoming" });
+    expect(plan?.requests).toEqual(["archive", "folder"].map(name => ({
+      sessionId: "ssh-a", sourceSessionId: "ssh-b", direction: "relay", protocol: "sftp",
+      source: "/srv/data/" + name, destination: "/home/test/incoming/" + name,
+    })));
+  });
+  it("uses the left host's current folder for reverse transfers", () => {
+    const current = withPeer();
+    const snapshot = captureFileDrag(current, "remote", "/home/test/incoming", [], "sftp")!;
+    expect(acceptFileDrop(snapshot, current, { side: "local" })?.requests[0]).toEqual({
+      sessionId: "ssh-b", sourceSessionId: "ssh-a", direction: "relay", protocol: "sftp",
+      source: "/home/test/incoming", destination: "/srv/data/incoming",
+    });
+  });
+  it("cancels a pending relay when the peer changes, disconnects or is replaced with the computer", () => {
+    const current = withPeer();
+    const snapshot = captureFileDrag(current, "remote", "/home/test/remote.txt", [], "sftp")!;
+    const other = { ...current.peer! };
+    for (const peer of [undefined, { ...other, id: "ssh-c" }, { ...other, ready: false },
+      { ...other, binding: "new-route" }, { ...other, id: "ssh-a" }]) {
+      expect(acceptFileDrop(snapshot, { ...current, peer }, { side: "local" })).toBeNull();
+    }
+  });
+  it("routes Explorer drags to the right host as desktop uploads when the left panel shows another host", () => {
+    const current = withPeer();
+    const snapshot = captureExternalFiles(current, ["C:\\temp\\photo.jpg"], "sftp")!;
+    expect(acceptFileDrop(snapshot, current, { side: "remote" })?.requests[0]).toEqual({
+      sessionId: "ssh-a", direction: "upload", protocol: "sftp",
+      source: "C:\\temp\\photo.jpg", destination: "/home/test/photo.jpg",
+    });
+  });
   it("uploads the selected batch into a hovered folder without moving originals or changing directories", () => {
     const current = context();
     const snapshot = captureFileDrag(

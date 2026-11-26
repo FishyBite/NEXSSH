@@ -100,7 +100,7 @@ fn transport_disconnect_resume_and_conflict_policies() {
             let sftp = broken.sftp().unwrap();
             let mut p = progress(&state, &mut transfer, &cancel);
             p.interrupt = Some((256 * 1024, socket));
-            assert!(resume::copy(&broken, &sftp, &entry, None, &mut p).is_err());
+            assert!(resume::copy(&broken, &sftp, None, &entry, None, &mut p).is_err());
             assert!(p.network_bytes >= 256 * 1024 && p.network_bytes < entry.size);
             persist(&state, &transfer).unwrap();
         }
@@ -123,6 +123,7 @@ fn transport_disconnect_resume_and_conflict_policies() {
         let err = resume::copy(
             &reconnected,
             &sftp,
+            None,
             &entry,
             None,
             &mut progress(&state, &mut transfer, &cancel),
@@ -170,6 +171,7 @@ fn transport_disconnect_resume_and_conflict_policies() {
                 let err = resume::copy(
                     &reconnected,
                     &sftp,
+                    None,
                     &entry,
                     None,
                     &mut progress(&state, &mut transfer, &cancel),
@@ -185,7 +187,7 @@ fn transport_disconnect_resume_and_conflict_policies() {
         }})).unwrap();
         let mut p = progress(&state, &mut transfer, &cancel);
         let resumed_at = Instant::now();
-        resume::copy(&reconnected, &sftp, &entry, None, &mut p).unwrap();
+        resume::copy(&reconnected, &sftp, None, &entry, None, &mut p).unwrap();
         assert!(p.transfer.resumed_bytes > 0);
         assert_eq!(p.network_bytes + p.transfer.resumed_bytes, entry.size);
         let minimum = Duration::from_secs_f64(p.network_bytes as f64 / (512.0 * 1024.0));
@@ -287,7 +289,7 @@ fn transport_disconnect_resume_and_conflict_policies() {
             } else {
                 assert!(expected.is_some());
             }
-            resume::copy(&reconnected, &sftp, &e, expected.as_ref(), &mut progress).unwrap();
+            resume::copy(&reconnected, &sftp, None, &e, expected.as_ref(), &mut progress).unwrap();
             if choice == "keepBoth" && upload {
                 sftp.unlink(Path::new(&e.destination)).unwrap();
             }
@@ -451,7 +453,7 @@ fn exercise_queue(fixture: &Value, state: &AppState, root: &Path, remote: &str, 
     let cancel = AtomicBool::new(false);
     let mut p = progress(state, &mut transfer, &cancel);
     p.interrupt = Some((128 * 1024, socket));
-    assert!(resume::copy(&broken, &interrupted, &entry, None, &mut p).is_err());
+    assert!(resume::copy(&broken, &interrupted, None, &entry, None, &mut p).is_err());
     transfer.status = "failed".into();
     transfer.resumable = true;
     persist(state, &transfer).unwrap();

@@ -1575,7 +1575,11 @@ export default function App() {
                     <Transfers
                       key={transferScope?.tabId || "all"}
                       sessionId={transferScope ? sessions.find((s) => (s.tabId || s.id) === transferScope.tabId)?.id : activeSession?.id}
-                      transfers={transferScope ? transfers.filter(t => (t.tabId || tabForConnection.current.get(t.sessionId) || t.sessionId) === transferScope.tabId) : transfers}
+                      transfers={transferScope ? transfers.filter(t =>
+                        (t.tabId || tabForConnection.current.get(t.sessionId) || t.sessionId) === transferScope.tabId ||
+                        (t.direction === "relay" && t.sourceSessionId &&
+                          (tabForConnection.current.get(t.sourceSessionId) || t.sourceSessionId) === transferScope.tabId)
+                      ) : transfers}
                       refresh={refreshTransfers}
                       notify={notify}
                     />

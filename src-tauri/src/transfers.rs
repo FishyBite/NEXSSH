@@ -36,6 +36,16 @@ pub struct Transfer {
     host_id: String,
     #[serde(default)]
     binding: Option<crate::storage::SessionBinding>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    source_session_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    source_binding: Option<crate::storage::SessionBinding>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    source_host_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    source_host_name: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    destination_host_name: Option<String>,
     source: String,
     destination: String,
     direction: String,
@@ -240,10 +250,22 @@ fn collect_upload(
     Ok(())
 }
 
-fn collect_download(
+fn remote_entry_mode(permissions: Option<u32>, directory: bool, relay: bool) -> i32 {
+    let mode = (permissions.unwrap_or(0o600) & 0o777) as i32;
+    // The receiving user owns new entries. They need to populate directories
+    // and reopen partial files for verification and resume.
+    if relay {
+        mode | if directory { 0o700 } else { 0o600 }
+    } else {
+        mode
+    }
+}
+
+fn collect_remote(
     sftp: &Sftp,
     source: &str,
     destination: &Path,
+    remote_destination: bool,
     entries: &mut Vec<Entry>,
     depth: usize,
     cancelled: &AtomicBool,
@@ -253,7 +275,9 @@ fn collect_download(
         .file_name()
         .and_then(|name| name.to_str())
         .ok_or("Download destination must include a filename")?;
-    files::validate_local_name(destination_name)?;
+    if !remote_destination {
+        files::validate_local_name(destination_name)?;
+    }
     if depth > 64 || entries.len() >= 100_000 {
         return Err("Folder exceeds the transfer limit of 64 levels or 100,000 entries".into());
     }
@@ -273,20 +297,25 @@ fn collect_download(
         } else {
             0
         },
-        mode: (stat.perm.unwrap_or(0o600) & 0o777) as i32,
+        mode: remote_entry_mode(stat.perm, stat.is_dir(), remote_destination),
         modified: stat.mtime,
     });
     if stat.is_dir() {
         for (child, _) in sftp.readdir(Path::new(source)).map_err(|e| e.to_string())? {
-            let name = child
-                .file_name()
-                .and_then(|n| n.to_str())
-                .ok_or("Remote filename is not UTF-8")?;
-            files::validate_local_name(name)?;
-            collect_download(
+            let name = child.strip_prefix(source)
+                .ok().and_then(|name| name.to_str()).ok_or("Invalid remote filename")?;
+            let child_source = files::remote_join(source, name)?;
+            let child_destination = if remote_destination {
+                PathBuf::from(files::remote_join(destination.to_str().ok_or("Invalid remote path")?, name)?)
+            } else {
+                files::validate_local_name(name)?;
+                destination.join(name)
+            };
+            collect_remote(
                 sftp,
-                &files::remote_join(source, name)?,
-                &destination.join(name),
+                &child_source,
+                &child_destination,
+                remote_destination,
                 entries,
                 depth + 1,
                 cancelled,
@@ -415,7 +444,7 @@ fn checksum(
 fn already_completed(
     sftp: &Sftp,
     entry: &Entry,
-    direction: &str,
+    source_sftp: Option<&Sftp>,
     progress: &Progress<'_>,
 ) -> Result<bool, String> {
     let Some(expected) = progress.transfer.completed_files.get(&entry.destination) else {
@@ -423,7 +452,7 @@ fn already_completed(
     };
     let download_limit = (progress.transfer.protocol == "sftp")
         .then_some(&progress.state.inner.sftp_bandwidth.download);
-    let destination_hash = if direction == "upload" {
+    let destination_hash = if progress.transfer.direction != "download" {
         files::remote_regular(sftp, Path::new(&entry.destination))?;
         checksum(
             sftp.open(Path::new(&entry.destination))
@@ -448,7 +477,10 @@ fn already_completed(
             entry.destination
         ));
     }
-    let source_hash = if direction == "upload" {
+    let source_hash = if let Some(source_sftp) = source_sftp {
+        files::remote_regular(source_sftp, Path::new(&entry.source))?;
+        checksum(source_sftp.open(Path::new(&entry.source)).map_err(|e| e.to_string())?, progress.cancelled, download_limit)?
+    } else {
         if !fs::symlink_metadata(&entry.source)
             .map_err(|e| e.to_string())?
             .file_type()
@@ -460,14 +492,6 @@ fn already_completed(
             fs::File::open(&entry.source).map_err(|e| e.to_string())?,
             progress.cancelled,
             None,
-        )?
-    } else {
-        files::remote_regular(sftp, Path::new(&entry.source))?;
-        checksum(
-            sftp.open(Path::new(&entry.source))
-                .map_err(|e| e.to_string())?,
-            progress.cancelled,
-            download_limit,
         )?
     };
     if &source_hash != expected {
@@ -606,6 +630,31 @@ fn copy_scp(
     result
 }
 
+fn validate_relay_path(path: &str) -> Result<(), String> {
+    let absolute = path.strip_prefix('/').ok_or("Host-to-host transfers require absolute remote paths")?;
+    if absolute.split('/').any(|part| part.is_empty() || part == "." || part == "..")
+        || path.contains(['\\', '\0', '\n', '\r'])
+    {
+        return Err("Choose a file or folder with a valid absolute remote path".into());
+    }
+    Ok(())
+}
+
+fn reject_overlapping_relay(transfer: &Transfer) -> Result<(), String> {
+    let fingerprint = |binding: Option<&crate::storage::SessionBinding>| {
+        binding.and_then(|binding| binding.route.first())
+            .and_then(|host| host["fingerprint"].as_str()).map(str::to_owned)
+    };
+    if fingerprint(transfer.source_binding.as_ref()) == fingerprint(transfer.binding.as_ref()) {
+        let source = Path::new(&transfer.source);
+        let destination = Path::new(&transfer.destination);
+        if source.starts_with(destination) || destination.starts_with(source) {
+            return Err("Source and destination overlap on the same SSH server".into());
+        }
+    }
+    Ok(())
+}
+
 fn execute(
     state: &AppState,
     app: &tauri::AppHandle,
@@ -616,6 +665,19 @@ fn execute(
     let session = open_transfer_session(state, transfer)?;
     session.set_timeout(15_000);
     let sftp = session.sftp().map_err(|e| e.to_string())?;
+    let relay = transfer.direction == "relay";
+    let relay_source = if relay {
+        let binding = transfer.source_binding.as_ref().ok_or("Source host binding is missing")?;
+        let source_session = state.open_bound_session(binding)
+            .map_err(|e| format!("Could not open source host: {e}"))?;
+        source_session.set_timeout(15_000);
+        let source_sftp = source_session.sftp().map_err(|e| format!("Could not open source SFTP: {e}"))?;
+        Some((source_session, source_sftp))
+    } else {
+        None
+    };
+    let source_sftp = relay_source.as_ref().map(|(_, sftp)| sftp).unwrap_or(&sftp);
+
     if transfer.restart_requested {
         resume::discard_verified(
             &session, &sftp, transfer, cancelled, &state.inner.sftp_bandwidth.download,
@@ -625,7 +687,7 @@ fn execute(
         persist(state, transfer)?;
     }
     let mut entries = Vec::new();
-    if transfer.direction == "upload" {
+    if transfer.direction != "download" {
         let destination = sftp
             .realpath(
                 Path::new(&transfer.destination)
@@ -638,6 +700,8 @@ fn execute(
             .and_then(|v| v.to_str())
             .ok_or("Destination must include a filename")?;
         transfer.destination = files::remote_join(&destination.to_string_lossy(), name)?;
+    }
+    if transfer.direction == "upload" {
         collect_upload(
             Path::new(&transfer.source),
             &transfer.destination,
@@ -646,20 +710,24 @@ fn execute(
             cancelled,
         )?;
     } else {
-        let source = sftp
+        let source = source_sftp
             .realpath(Path::new(&transfer.source))
             .map_err(|e| e.to_string())?;
-        let stat = sftp
+        let stat = source_sftp
             .lstat(Path::new(&transfer.source))
             .map_err(|e| e.to_string())?;
         if !stat.is_file() && !stat.is_dir() {
             return Err("Symbolic link transfers are not supported".into());
         }
         transfer.source = source.to_string_lossy().into_owned();
-        collect_download(
-            &sftp,
+        if relay {
+            reject_overlapping_relay(transfer)?;
+        }
+        collect_remote(
+            source_sftp,
             &transfer.source,
             Path::new(&transfer.destination),
+            relay,
             &mut entries,
             0,
             cancelled,
@@ -683,8 +751,8 @@ fn execute(
         #[cfg(test)]
         interrupt: None,
     };
-    let upload = direction == "upload";
-    let reserved = conflict::reserved(&entries, upload);
+    let remote_destination = direction != "download";
+    let reserved = conflict::reserved(&entries, remote_destination);
     for mut entry in entries {
         check_cancel(cancelled)?;
         let original = entry.destination.clone();
@@ -703,7 +771,7 @@ fn execute(
                         .map_err(|e| e.to_string())?;
                     entry.destination = if suffix.as_os_str().is_empty() {
                         renamed.clone()
-                    } else if upload {
+                    } else if remote_destination {
                         format!(
                             "{}/{}",
                             renamed.trim_end_matches('/'),
@@ -723,7 +791,7 @@ fn execute(
             progress.advance(entry.size)?;
             continue;
         }
-        if !entry.directory && already_completed(&sftp, &entry, &direction, &progress)? {
+        if !entry.directory && already_completed(&sftp, &entry, (direction != "upload").then_some(source_sftp), &progress)? {
             progress.advance(entry.size)?;
             continue;
         }
@@ -754,13 +822,13 @@ fn execute(
                 Destination::Write(expected) => expected,
             };
         if entry.directory {
-            if direction == "upload" {
+            if remote_destination {
                 remote_directory(&sftp, Path::new(&entry.destination), entry.mode)?;
             } else {
                 local_directory(Path::new(&entry.destination))?;
             }
         } else if protocol == "sftp" {
-            resume::copy(&session, &sftp, &entry, expected.as_ref(), &mut progress)?;
+            resume::copy(&session, &sftp, relay_source.as_ref(), &entry, expected.as_ref(), &mut progress)?;
         } else {
             copy_scp(&session, &sftp, &entry, expected.as_ref(), &mut progress)?;
         }
@@ -800,7 +868,7 @@ fn enqueue(
     }
     if queue_state.jobs.values().any(|job| {
         job.destination == transfer.destination
-            && job.direction == transfer.direction
+            && (job.direction == "download") == (transfer.direction == "download")
             && (job.direction == "download" || job.host_id == transfer.host_id)
     }) {
         return Err("A transfer to this destination is already queued".into());
@@ -955,9 +1023,10 @@ pub fn dispatch(
         "transfer_start" => {
             let direction = files::text(&payload, "direction")?;
             let protocol = files::text(&payload, "protocol")?;
-            if !["upload", "download"].contains(&direction) || !["sftp", "scp"].contains(&protocol)
+            let relay = direction == "relay";
+            if !["upload", "download", "relay"].contains(&direction) || !["sftp", "scp"].contains(&protocol) || (relay && protocol != "sftp")
             {
-                return Err("Choose upload/download and sftp/scp".into());
+                return Err("Choose SFTP for host-to-host transfers, or SFTP/SCP for local transfers".into());
             }
             let session_id = files::text(&payload, "sessionId")?;
             let binding = state.session_binding(session_id)?;
@@ -966,6 +1035,23 @@ pub fn dispatch(
             if source.contains(['\r', '\n']) || destination.contains(['\r', '\n']) {
                 return Err("Paths containing line breaks cannot be transferred".into());
             }
+            let (source_session_id, source_binding, source_host_name, destination_host_name) = if relay {
+                validate_relay_path(source)?;
+                validate_relay_path(destination)?;
+                let source_id = files::text(&payload, "sourceSessionId")?;
+                let source_binding = state.session_binding(source_id)?;
+                if source_binding.host_id == binding.host_id {
+                    return Err("Select two different hosts for this transfer".into());
+                }
+                let config = state.config()?;
+                let display_name = |id: &str| config["hosts"].as_array().and_then(|hosts|
+                    hosts.iter().find(|host| host["id"].as_str() == Some(id)))
+                    .and_then(|host| host["name"].as_str()).unwrap_or(id).to_owned();
+                let source_name = display_name(&source_binding.host_id);
+                (Some(source_id.to_owned()), Some(source_binding), Some(source_name), Some(display_name(&binding.host_id)))
+            } else {
+                (None, None, None, None)
+            };
             enqueue(
                 state,
                 app,
@@ -976,6 +1062,8 @@ pub fn dispatch(
                     route_token: Some(binding.route_token()?),
                     host_id: binding.host_id.clone(),
                     binding: Some(binding),
+                    source_host_id: source_binding.as_ref().map(|b| b.host_id.clone()),
+                    source_session_id, source_binding, source_host_name, destination_host_name,
                     source: source.into(),
                     destination: destination.into(),
                     direction: direction.into(),
@@ -1073,6 +1161,41 @@ pub fn dispatch(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn relay_new_entry_modes_allow_copy_and_resume_without_widening_other_access() {
+        assert_eq!(remote_entry_mode(Some(0o40555), true, true), 0o755);
+        assert_eq!(remote_entry_mode(Some(0o40500), true, true), 0o700);
+        assert_eq!(remote_entry_mode(None, true, true), 0o700);
+        assert_eq!(remote_entry_mode(Some(0o100444), false, true), 0o644);
+        assert_eq!(remote_entry_mode(Some(0o100040), false, true), 0o640);
+        assert_eq!(remote_entry_mode(Some(0o104755), false, true), 0o755);
+        assert_eq!(remote_entry_mode(Some(0o40555), true, false), 0o555);
+    }
+
+    #[test]
+    fn relay_checks_remote_paths_and_canonical_overlaps_on_host_aliases() {
+        for path in ["/", "//etc/passwd", "relative", "/dir/../name", "/dir/./name", "/prefix/", "/bad\\name", "/bad\nname"] {
+            assert!(validate_relay_path(path).is_err(), "{path:?}");
+        }
+        assert!(validate_relay_path("/homes/build/a file.tar").is_ok());
+        let mut transfer: Transfer = serde_json::from_value(json!({
+            "id":"relay","hostId":"alias","sessionId":"two","sourceSessionId":"one",
+            "binding":{"hostId":"alias","route":[{"fingerprint":"SHA256:same"}]},
+            "sourceBinding":{"hostId":"source","route":[{"fingerprint":"SHA256:same"}]},
+            "source":"/srv/config","destination":"/srv/config/sub/config","direction":"relay",
+            "protocol":"sftp","status":"queued","startedAt":0,"totalBytes":0,
+            "transferredBytes":0,"speedBytesPerSecond":0
+        })).unwrap();
+        assert!(reject_overlapping_relay(&transfer).is_err());
+        transfer.destination = "/srv/config-backup".into();
+        assert!(reject_overlapping_relay(&transfer).is_ok());
+        transfer.destination = "/srv/config".into();
+        assert!(reject_overlapping_relay(&transfer).is_err());
+        transfer.binding.as_mut().unwrap().route[0]["fingerprint"] = json!("SHA256:different");
+        assert!(reject_overlapping_relay(&transfer).is_ok());
+    }
+
     #[test]
     fn explorer_only_reveals_a_published_download_at_its_actual_path() {
         let folder = std::env::temp_dir().join(uuid::Uuid::new_v4().to_string());
@@ -1295,10 +1418,11 @@ mod tests {
         );
         assert!(remote_directory(&sftp, Path::new(&path), 0o700).is_err());
         let mut entries = Vec::new();
-        collect_download(
+        collect_remote(
             &sftp,
             &directory,
             Path::new("test-download"),
+            false,
             &mut entries,
             0,
             &AtomicBool::new(false),

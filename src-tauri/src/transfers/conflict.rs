@@ -65,12 +65,15 @@ pub(super) enum Destination {
 }
 
 pub(super) fn scope(transfer: &Transfer) -> String {
-    json!([
+    let mut key = json!([
         transfer.batch_id.as_ref().unwrap_or(&transfer.id),
         transfer.direction,
         transfer.binding
-    ])
-    .to_string()
+    ]);
+    if let Some(source) = &transfer.source_binding {
+        key.as_array_mut().unwrap().push(json!(source));
+    }
+    key.to_string()
 }
 
 fn key(path: &str, upload: bool) -> String {
@@ -249,7 +252,7 @@ pub(super) fn destination(
     reserved: &std::collections::HashSet<String>,
     original: &str,
 ) -> Result<Destination, String> {
-    let upload = progress.transfer.direction == "upload";
+    let upload = progress.transfer.direction != "download";
     let mut force_prompt = false;
     while let Some(stamp) = inspect(sftp, upload, &entry.destination)? {
         if entry.directory && stamp.directory {

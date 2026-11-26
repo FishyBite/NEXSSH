@@ -16,6 +16,7 @@ import {
   ChevronDown,
   Download,
   Upload,
+  ArrowRightLeft,
 } from "lucide-react";
 import type { Config, Host, Session, KeyInfo, Transfer } from "./types";
 import { uid, message } from "./types";
@@ -437,7 +438,7 @@ export function Hosts({
           </header>
           <ul>
             {transfers.slice(0, 3).map((transfer) => {
-              const Icon = transfer.direction === "upload" ? Upload : Download;
+              const Icon = transfer.direction === "relay" ? ArrowRightLeft : transfer.direction === "upload" ? Upload : Download;
               const name = transfer.source.split(/[\\/]/).pop() || transfer.source;
               return <li key={transfer.id}>
                 <button type="button" onClick={onOpenTransfers} title={name}>

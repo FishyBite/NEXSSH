@@ -20,6 +20,12 @@ function transfer(sessionId: string, state: Partial<Transfer>): Transfer {
   };
 }
 
+it("shows an active relay on the source and destination tabs", () => {
+  const groups = progressBySession([transfer("beta", { sourceSessionId: "alpha", direction: "relay" })]);
+  expect(groups.get("alpha")).toMatchObject({ count: 1, download: true, upload: false, done: 40 });
+  expect(groups.get("beta")).toMatchObject({ count: 1, upload: true, download: false, done: 40 });
+});
+
 it("sums bytes for simultaneous transfers on the same tab and excludes completed jobs", () => {
   const bySession = progressBySession([
     transfer("a", {}),
