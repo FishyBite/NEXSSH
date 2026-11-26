@@ -4,6 +4,19 @@ export async function exerciseWindowScroll({page, expect, nav}) {
   const main = page.locator("main.workspace");
   const history = main.getByRole("button", {name:"View history",exact:true});
   const rail = page.getByRole("navigation",{name:"Main navigation"});
+  const workspaceItems = ["Hosts", "Favorites", "Recent", "Groups", "SSH keys", "Snippets"];
+  const toolItems = ["Terminal", "Files", "Serial", "Databases", "Transfers", "Monitoring", "Tunnels"];
+  async function checkSidebarOrder() {
+    const items = [...workspaceItems, ...toolItems];
+    const buttons = rail.getByRole("button");
+    await expect(buttons).toHaveCount(items.length);
+    await nav(items[0]).focus();
+    for (const [index, label] of items.entries()) {
+      if (index) await page.keyboard.press("Tab");
+      await expect(buttons.nth(index)).toHaveAccessibleName(label);
+      await expect(buttons.nth(index)).toBeFocused();
+    }
+  }
   const cdp = await page.context().newCDPSession(page);
   const geometry = () => page.evaluate(() => {
     const root = document.scrollingElement;
@@ -20,6 +33,8 @@ export async function exerciseWindowScroll({page, expect, nav}) {
       Math.abs(g.footerBottom - g.viewportHeight) <= 1 && Math.abs(g.sidebarBottom - g.viewportHeight) <= 1 &&
       Math.abs(g.headerTop) <= 1 && Math.abs(g.shellLeft) <= 1, JSON.stringify(g));
   }
+  await expect(nav("Expand sidebar")).toBeVisible();
+  await checkSidebarOrder();
   await nav("Hosts").click();
   await expect(main.getByRole("heading",{name:"Your hosts"})).toBeVisible();
   // Portals and off-screen measurement nodes can extend the document below the shell.
@@ -64,6 +79,8 @@ export async function exerciseWindowScroll({page, expect, nav}) {
   await page.emulateMedia({reducedMotion:"reduce"});
   await nav("Expand sidebar").click();
   await expect(nav("Collapse sidebar")).toBeVisible();
+  await expect(rail.locator(".nav-section-label")).toHaveText(["Workspace", "Tools"]);
+  await checkSidebarOrder();
   await checkChrome();
   await history.click();
   await expect(nav("Transfers")).toHaveAttribute("aria-current","page");
