@@ -29,6 +29,13 @@ export async function exerciseSidebarNavigation({ page, expect, nav }) {
   await nav("Terminal").click();
   if (await button("Restore layout").isVisible()) await button("Restore layout").click();
 
+  const sectionOrder = await sidebar.getByRole("navigation", {name: "Main navigation"}).evaluate(nav =>
+    Array.from(nav.children, item => item.getAttribute("aria-label") || item.textContent.trim()));
+  assert.deepEqual(sectionOrder, [
+    "Workspace", "Hosts", "Favorites", "Recent", "Groups", "SSH keys", "Snippets",
+    "Tools", "Terminal", "Files", "Serial", "Databases", "Transfers", "Monitoring", "Tunnels",
+  ]);
+
   const viewports = [1380, 760, 680];
   for (const viewport of viewports) {
     await page.setViewportSize({ width: viewport, height: 900 });

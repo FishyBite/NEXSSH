@@ -18,8 +18,9 @@ export async function exerciseFilesDrag({ page, expect }) {
   };
   await drag("local", pane("remote").locator(".file-list"));
   await expect.poll(async () => (await transfers()).length).toBe(1);
-  const {batchId:firstBatch,...first} = (await transfers())[0];
+  const {batchId:firstBatch, tabId, ...first} = (await transfers())[0];
   assert.match(firstBatch,/^[\da-f-]{36}$/i);
+  assert.match(tabId,/^[\da-f-]{36}$/i);
   assert.deepEqual(first, {
     sessionId, source: "C:\\Users\\Test User/.profile", destination: "/var/home/test-user/.profile", direction: "upload", protocol: "sftp",
   });
@@ -30,10 +31,44 @@ export async function exerciseFilesDrag({ page, expect }) {
   const {batchId:secondBatch,...second} = (await transfers())[1];
   assert.notEqual(firstBatch,secondBatch);
   assert.deepEqual(second, {
-    sessionId, source: "/var/home/test-user/.profile", destination: "C:\\Users\\Test User/Documents\\.profile", direction: "download", protocol: "scp",
+    sessionId, tabId, source: "/var/home/test-user/.profile", destination: "C:\\Users\\Test User/Documents\\.profile", direction: "download", protocol: "scp",
   });
   await expect(page.getByRole("heading", { name: "File manager", exact: true })).toBeVisible();
   await expect.poll(() => page.evaluate(() => fixture.calls.filter(call => call.args?.action === "transfer_list").length)).toBeGreaterThan(1);
+  await page.getByRole("combobox", { name: /^Transfer with/ }).selectOption("sftp");
+  const folders = ["First folder", "Second folder"].map(name => "C:\\QA\\" + name);
+  async function dropFolders(address, highlight) {
+    await expect(address).toHaveValue("/var/home/test-user");
+    await address.scrollIntoViewIfNeeded();
+    const box = await address.boundingBox();
+    assert.ok(box);
+    const position = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    const send = event => page.evaluate(({event, position, paths}) => {
+      window.fixture.emit(event, {position, paths});
+    }, {event, position, paths: folders});
+    const before = (await transfers()).length;
+    await send("tauri://drag-enter");
+    await expect(highlight).toBeVisible();
+    await send("tauri://drag-drop");
+    await expect.poll(async () => (await transfers()).length).toBe(before + folders.length);
+    const batch = (await transfers()).slice(before);
+    assert.ok(batch[0].batchId && batch[0].batchId === batch[1].batchId);
+    for (const [i, item] of batch.entries()) {
+      assert.equal(item.sessionId, sessionId);
+      assert.equal(item.tabId, tabId);
+      assert.equal(item.source, folders[i]);
+      assert.equal(item.destination, "/var/home/test-user/" + folders[i].split("\\").pop());
+      assert.equal(item.protocol, "sftp");
+      assert.equal(item.direction, "upload");
+    }
+  }
+  await dropFolders(pane("remote").getByRole("textbox", { name: "remote directory path" }),
+    pane("remote").locator(".path-bar.file-drop-target"));
+  await page.getByRole("group", {name: "Session view"}).getByRole("button", {name: "Terminal", exact: true}).click();
+  await page.getByRole("button", {name: "Remote files panel", exact: true}).click();
+  const drawer = page.getByRole("complementary", {name: /^Remote files for /});
+  await dropFolders(drawer.getByRole("textbox", { name: "Remote folder path" }),
+    drawer.locator('.drawer-address[data-upload-hover="true"]'));
   assert.equal(await page.evaluate(() => fixture.calls.filter(call => call.args?.action === "ssh_write").length), 0);
-  return { uploadUsesSelectedServer: true, downloadToDirectoryUsesSelectedProtocol: true, filesStaysOpenAfterDrop: true, queueRefreshed: true };
+  return { uploadUsesSelectedServer: true, downloadToDirectoryUsesSelectedProtocol: true, filesStaysOpenAfterDrop: true, queueRefreshed: true, folderPathDrops: ["files", "drawer"] };
 }
