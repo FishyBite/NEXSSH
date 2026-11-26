@@ -73,7 +73,7 @@ Previous downloads include [RC9](../../releases/tag/v1.0.0-rc.9), [RC8](../../re
 
 ## Application data
 
-The RC10 Windows download uses the same profile and vault locations as RC7 and RC8. To build the Windows release with those locations, check out the `v1.0.0-rc.10` tag. Development builds from `main` use their own storage.
+This Windows build uses the same profile and vault locations as the RC7, RC8, and RC9 Windows installers.
 
 ## Run on Windows
 

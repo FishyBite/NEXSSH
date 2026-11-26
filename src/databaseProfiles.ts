@@ -96,7 +96,7 @@ export function readProfiles(workspace: string): DatabaseProfile[] {
     return value.map(cleanProfile).filter((item): item is DatabaseProfile => !!item && !validateProfile(item));
   } catch { return []; }
 }
-const profileKey = (workspace: string) => "vexssh.db.profiles.v1." + workspace;
+const profileKey = (workspace: string) => "nexssh.db.profiles.v1." + workspace;
 const profileChanges = new EventTarget();
 export function saveProfiles(workspace: string, profiles: DatabaseProfile[]) {
   localStorage.setItem(profileKey(workspace), JSON.stringify(profiles.map(cleanProfile)));
