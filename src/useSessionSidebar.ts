@@ -3,7 +3,7 @@ import { useCallback, useLayoutEffect, useRef, useState } from "react";
 export function useSessionSidebar(immersive: boolean, sessionId: string, view: string, workspace: string, focusTerminal: () => void) {
   const [open, setOpen] = useState(false);
   const [pinned, setPinned] = useState(() => {
-    try { return localStorage.getItem("vexssh.session.sidebar.pinned") === "true"; }
+    try { return localStorage.getItem("nexssh.session.sidebar.pinned") === "true"; }
     catch { return false; }
   });
   const sidebar = useRef<HTMLElement>(null);
@@ -22,7 +22,7 @@ export function useSessionSidebar(immersive: boolean, sessionId: string, view: s
   const togglePin = () => {
     const next = !pinned;
     setPinned(next);
-    try { localStorage.setItem("vexssh.session.sidebar.pinned", String(next)); } catch {}
+    try { localStorage.setItem("nexssh.session.sidebar.pinned", String(next)); } catch {}
     if (next) setOpen(false);
     else dismiss();
   };

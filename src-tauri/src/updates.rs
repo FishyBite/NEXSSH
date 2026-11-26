@@ -15,12 +15,12 @@ use std::{
 };
 
 const PUBLIC_KEY: &str = "81JUyqZaqCmq0uo/gCu87n31oMfbWvmQ0DXzbvzot8Q=";
-const PRODUCT: &str = "com.vexssh.desktop";
+const PRODUCT: &str = "com.nexssh.desktop";
 const TARGET: &str = "x86_64-pc-windows-msvc";
 const MAX_EXE: u64 = 256 * 1024 * 1024;
 const MAX_MANIFEST: u64 = 4096;
-const HELPER_NAME: &str = "VEXSSH-update-helper.exe";
-const HELPER_FLAG: &str = "--vexssh-apply-update";
+const HELPER_NAME: &str = "NEXSSH-update-helper.exe";
+const HELPER_FLAG: &str = "--nexssh-apply-update";
 static UPDATE_LOCK: Mutex<()> = Mutex::new(());
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
@@ -229,7 +229,7 @@ fn verify_manifest(
     if manifest.schema != 1
         || manifest.product != PRODUCT
         || manifest.target != TARGET
-        || manifest.file != "VEXSSH.exe"
+        || manifest.file != "NEXSSH.exe"
         || manifest.size < 256
         || manifest.size > MAX_EXE
         || !is_hash(&manifest.sha256)
@@ -311,7 +311,7 @@ fn read_package(path: &Path, current: &str, key: &VerifyingKey) -> Result<Packag
         let limit = match name.as_ref() {
             "manifest.json" => MAX_MANIFEST,
             "manifest.sig" => 64,
-            "VEXSSH.exe" => MAX_EXE,
+            "NEXSSH.exe" => MAX_EXE,
             _ => return Err(error("The update package contains an unexpected file")),
         };
         if !names.insert(name.to_string())
@@ -341,7 +341,7 @@ fn read_package(path: &Path, current: &str, key: &VerifyingKey) -> Result<Packag
     let manifest = verify_manifest(&raw_manifest, &signature, current, key)?;
     let executable = read_bounded(
         archive
-            .by_name("VEXSSH.exe")
+            .by_name("NEXSSH.exe")
             .map_err(|_| error("Missing update executable"))?,
         manifest.size,
     )?;
@@ -435,7 +435,7 @@ fn verify_stage(
     }
     if executable {
         verify_executable(
-            &read_limited(&directory.join("VEXSSH.exe"), MAX_EXE)?,
+            &read_limited(&directory.join("NEXSSH.exe"), MAX_EXE)?,
             &manifest,
         )?;
     }
@@ -452,7 +452,7 @@ fn remove_stage(paths: &Paths, id: &str) -> Result<(), String> {
         HELPER_NAME,
         "manifest.json",
         "manifest.sig",
-        "VEXSSH.exe",
+        "NEXSSH.exe",
         "parent-ready.json",
     ] {
         let path = directory.join(name);
@@ -482,7 +482,7 @@ fn prepare_at(paths: &Paths, package: Package) -> Result<Pending, String> {
     let result = (|| {
         write_new(&directory.join("manifest.json"), &package.raw_manifest)?;
         write_new(&directory.join("manifest.sig"), &package.signature)?;
-        write_new(&directory.join("VEXSSH.exe"), &package.executable)?;
+        write_new(&directory.join("NEXSSH.exe"), &package.executable)?;
         write_json(paths, "pending.json", &pending)
     })();
     if let Err(error) = result {
@@ -500,8 +500,8 @@ fn canonical_install() -> Result<PathBuf, String> {
         .ok_or("The Windows installation directory is unavailable")?;
     Ok(PathBuf::from(directory)
         .join("Programs")
-        .join("VEXSSH")
-        .join("VEXSSH.exe"))
+        .join("NEXSSH")
+        .join("NEXSSH.exe"))
 }
 
 fn same_path(left: &Path, right: &Path) -> Result<bool, String> {
@@ -847,18 +847,18 @@ fn install_with(
         .parent()
         .ok_or("Invalid installation directory")?;
     safe_path(parent)?;
-    let candidate = parent.join(format!("VEXSSH-update-{}.tmp", pending.stage_id));
+    let candidate = parent.join(format!("NEXSSH-update-{}.tmp", pending.stage_id));
     if fs::symlink_metadata(&candidate).is_ok() {
         safe_file(&candidate)?;
         fs::remove_file(&candidate)
             .map_err(|_| error("Unable to reset this update's temporary executable"))?;
     }
-    let backup = parent.join("VEXSSH.previous.bak");
+    let backup = parent.join("NEXSSH.previous.bak");
     if backup.exists() {
         safe_file(&backup)?;
     }
     let executable = read_limited(
-        &stage_path(paths, &pending.stage_id)?.join("VEXSSH.exe"),
+        &stage_path(paths, &pending.stage_id)?.join("NEXSSH.exe"),
         MAX_EXE,
     )?;
     verify_executable(&executable, &pending.manifest)?;
@@ -1082,7 +1082,7 @@ mod tests {
             fs::create_dir(&data).unwrap();
             let paths = Paths {
                 root: data.join("updates"),
-                install: install_dir.join("VEXSSH.exe"),
+                install: install_dir.join("NEXSSH.exe"),
             };
             let mut executable = vec![0_u8; 512];
             executable[..2].copy_from_slice(b"MZ");
@@ -1106,7 +1106,7 @@ mod tests {
                 product: PRODUCT.into(),
                 version: "99.0.0".into(),
                 target: TARGET.into(),
-                file: "VEXSSH.exe".into(),
+                file: "NEXSSH.exe".into(),
                 size: self.executable.len() as u64,
                 sha256: hash_bytes(&self.executable),
             }
@@ -1138,7 +1138,7 @@ mod tests {
             for (name, data) in [
                 ("manifest.json", manifest),
                 ("manifest.sig", signature),
-                ("VEXSSH.exe", executable),
+                ("NEXSSH.exe", executable),
             ] {
                 archive.start_file(name, options).unwrap();
                 archive.write_all(data).unwrap();
@@ -1196,7 +1196,7 @@ mod tests {
         .unwrap();
         let file = stage_path(&fixture.paths, &pending.stage_id)
             .unwrap()
-            .join("VEXSSH.exe");
+            .join("NEXSSH.exe");
         let mut changed = fixture.executable.clone();
         changed[301] = 9;
         fs::write(file, changed).unwrap();
@@ -1223,7 +1223,7 @@ mod tests {
         binary[400] ^= 1;
         let bad_binary = fixture.archive(&package.raw_manifest, &package.signature, &binary, None);
         assert!(read_package(&bad_binary, "1.0.0", &fixture.key.verifying_key()).is_err());
-        for name in ["../outside.exe", "nested/VEXSSH.exe", "unexpected.txt"] {
+        for name in ["../outside.exe", "nested/NEXSSH.exe", "unexpected.txt"] {
             let archive = fixture.archive(
                 &package.raw_manifest,
                 &package.signature,
@@ -1250,7 +1250,7 @@ mod tests {
             ("version", json!("0.9.0")),
             ("version", json!("99.0.0-beta.1")),
             ("target", json!("aarch64-pc-windows-msvc")),
-            ("file", json!("../VEXSSH.exe")),
+            ("file", json!("../NEXSSH.exe")),
             ("size", json!(MAX_EXE + 1)),
             ("sha256", json!("not-a-checksum")),
             ("password", json!("FAKE-CREDENTIAL-MUST-NOT-BE-ACCEPTED")),
@@ -1318,7 +1318,7 @@ mod tests {
         let fixture = Fixture::new();
         let pending = prepare_at(&fixture.paths, fixture.package()).unwrap();
         let directory = fixture.paths.install.parent().unwrap();
-        let candidate = directory.join(format!("VEXSSH-update-{}.tmp", pending.stage_id));
+        let candidate = directory.join(format!("NEXSSH-update-{}.tmp", pending.stage_id));
         let unrelated = directory.join("unrelated.tmp");
         fs::write(&candidate, b"interrupted candidate copy").unwrap();
         fs::write(&unrelated, b"keep").unwrap();
@@ -1348,7 +1348,7 @@ mod tests {
         archive.start_file("manifest.sig", options).unwrap();
         archive.write_all(&package.signature).unwrap();
         archive
-            .add_symlink("VEXSSH.exe", "../outside.exe", options)
+            .add_symlink("NEXSSH.exe", "../outside.exe", options)
             .unwrap();
         archive.finish().unwrap();
         assert!(read_package(&path, "1.0.0", &fixture.key.verifying_key()).is_err());
@@ -1393,7 +1393,7 @@ mod tests {
                     .install
                     .parent()
                     .unwrap()
-                    .join("VEXSSH.previous.bak")
+                    .join("NEXSSH.previous.bak")
             )
             .unwrap(),
             original

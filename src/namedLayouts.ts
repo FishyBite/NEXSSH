@@ -18,7 +18,7 @@ export type LayoutSnapshot = {
   panes: [LayoutPane, LayoutPane];
 };
 export type NamedLayout = LayoutSnapshot & { id: string; name: string };
-export const layoutStorageKey = (workspace: string) => `vexssh.layouts.v1.${workspace}`;
+export const layoutStorageKey = (workspace: string) => `nexssh.layouts.v1.${workspace}`;
 
 export function captureLayout(layout: TerminalLayout, active: string, sessions: Session[], hosts: Host[],
   foldersFor: (session: Session) => LayoutFolders): LayoutSnapshot | undefined {
