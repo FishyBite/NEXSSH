@@ -9,11 +9,17 @@ type Layout = {
   overlays: Element[];
 };
 
+export function remoteDropPathBar(hit: Element | null) {
+  return hit?.closest("button") ? null : hit?.closest<HTMLElement>('[data-file-drop-path="remote"]');
+}
+
 function currentLayout(list: HTMLElement | null, rows: string): Layout | null {
   if (!list?.isConnected) return null;
   const elements: HTMLElement[] = Array.from(
     list.querySelectorAll<HTMLElement>(rows),
   );
+  const pathBar = list.closest('[data-file-side],.terminal-file-drawer')?.querySelector<HTMLElement>('[data-file-drop-path="remote"]');
+  if (pathBar) elements.push(pathBar, ...pathBar.querySelectorAll<HTMLElement>("button,input"));
   for (
     let ancestor: HTMLElement | null = list;
     ancestor;

@@ -1939,7 +1939,8 @@ function FilePane({
         </IconButton>
       </div>
       <form
-        className="path-bar"
+        className={`path-bar${nativeDrop?.onPathBar && path === data.path ? " file-drop-target" : ""}`}
+        data-file-drop-path={side === "remote" && enabled && !busy && !error && data.path && path === data.path ? side : undefined}
         onSubmit={(e) => {
           e.preventDefault();
           load(path);
@@ -1954,6 +1955,9 @@ function FilePane({
         </IconButton>
         <input
           aria-label={`${side} directory path`}
+          title={side === "remote" && enabled
+            ? path === data.path ? "Drop files or folders here to upload to this directory" : "Press Enter to open this directory before dropping files here"
+            : undefined}
           value={path}
           onChange={(e) => setPath(e.target.value)}
           disabled={!enabled}
@@ -2041,7 +2045,7 @@ function FilePane({
           >
             <div
               ref={listRef}
-              className={`file-list${nativeDrop?.destination === data.path ? " file-drop-target" : ""}`}
+              className={`file-list${nativeDrop && !nativeDrop.onPathBar && nativeDrop.destination === data.path ? " file-drop-target" : ""}`}
               data-file-drop-list={side}
               tabIndex={-1}
               aria-label={`${side} file list`}

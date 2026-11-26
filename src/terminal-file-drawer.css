@@ -155,6 +155,7 @@
   outline: 2px solid var(--accent);
   outline-offset: -2px;
 }
+.drawer-address[data-upload-hover="true"] input,
 .drawer-entries[data-upload-hover="true"],
 .drawer-entry[data-upload-hover="true"] {
   box-shadow: inset 0 0 0 2px var(--accent);

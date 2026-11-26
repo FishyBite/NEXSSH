@@ -41,7 +41,7 @@ Screenshots from RC8 with sample connections.
 ## What it does
 
 - **SSH** with saved hosts, tabs, split panes, and server fingerprint verification. Sign in with a password, an OpenSSH private key, or an SSH agent.
-- **SFTP and SCP** for transfers between your computer and a remote host. Drag files across panes, check transfer progress, and resume eligible interrupted SFTP transfers.
+- **SFTP and SCP** for transfers between your computer and a remote host. Drop files or folders from Explorer onto the remote path field to upload to the open directory. Check transfer progress and resume eligible interrupted SFTP transfers.
 - **Serial** for Windows COM ports. Save the baud rate, parity, stop bits, and flow control for each device.
 - **Databases** with a query editor and object browser. Connect directly or through an existing SSH session. SQLite opens a local file.
 

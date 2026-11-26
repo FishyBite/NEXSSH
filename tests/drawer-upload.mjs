@@ -300,6 +300,24 @@ try {
   await page.evaluate(() => window.fixture.finishChoice(null));
   assert.equal((await transfers()).length, 6);
   await expect(reveal).toBeVisible();
+  const folders = ["C:\\QA source\\First folder", "C:\\QA source\\Second folder"];
+  const folderPath = await point(address);
+  await emit("enter", folderPath, folders);
+  await expect(hint).toContainText("/home");
+  await expect(drawer.locator(".drawer-address")).toHaveAttribute("data-upload-hover", "true");
+  await emit("drop", folderPath, folders);
+  await expect.poll(async () => (await transfers()).length).toBe(8);
+  const queuedFolders = (await transfers()).slice(-2);
+  assert.deepEqual(queuedFolders.map(t => [t.source, t.destination]), [
+    [folders[0], "/home/First folder"], [folders[1], "/home/Second folder"],
+  ]);
+  assert.ok(queuedFolders[0].batchId && queuedFolders[0].batchId === queuedFolders[1].batchId);
+  await address.fill("/not-yet-opened");
+  await emit("enter", folderPath, folders);
+  await emit("drop", folderPath, folders);
+  await atFrame();
+  assert.equal((await transfers()).length, 8);
+  await expect(address).toHaveValue("/not-yet-opened");
   assert.deepEqual(errors, []);
   console.log(
     "PASS drawer native SFTP upload batch, DPI, directory hint, duplicate and stale drops, completion refresh and retained focus.",

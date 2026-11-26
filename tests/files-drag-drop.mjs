@@ -398,12 +398,12 @@ try {
     await drag(page, "local", () => center(file(page, "remote", "docs")), "docs");
     await expectTransfers(page, [plan("upload", "C:/local/docs", "/srv/shared/docs/docs")]);
   });
-  for (const target of ["same side", "file row", "path control", "header", "outside"]) {
+  for (const target of ["same side", "file row", "parent directory button", "header", "outside"]) {
     await run(`reject ${target} target`, async page => {
       await begin(page);
       const point = target === "same side" ? await background(page, "local")
         : target === "file row" ? await center(file(page, "remote", "two.txt"))
-          : target === "path control" ? await center(directoryPath(page, "remote"))
+          : target === "parent directory button" ? await center(pane(page, "remote").getByRole("button", { name: "Parent directory", exact: true }))
             : target === "header" ? await center(pane(page, "remote").locator(".file-pane-header"))
               : { x: 3, y: 3 };
       await move(page, point);
@@ -513,11 +513,55 @@ try {
       await expect.poll(() => page.evaluate(() => window.fixture.transferCallbacks)).toEqual([false]);
     });
   }
+  for (const origin of ["Explorer", "local panel"]) {
+    await run(`${origin} uploads multiple folders onto the remote path bar above a full list`, async page => {
+      const destination = "/srv/shared/releases";
+      await page.evaluate(() => { window.fixture.overflowSide = "remote"; });
+      await visit(page, "remote", destination);
+      await expect(pane(page, "remote").locator(".file-row")).toHaveCount(40);
+      const target = await center(directoryPath(page, "remote"));
+      const names = ["folder-01", "folder-02"];
+      const source = origin === "Explorer" ? "C:/Explorer" : "C:/local";
+      const paths = names.map(name => `${source}/${name}`);
+      if (origin === "Explorer") {
+        await page.evaluate(({target, paths}) => {
+          fixture.scale = 1.5;
+          fixture.emitNative("enter", { x: target.x * fixture.scale, y: target.y * fixture.scale }, paths);
+        }, {target, paths});
+      } else {
+        await page.evaluate(() => { window.fixture.overflowSide = "local"; });
+        await pane(page, "local").getByRole("button", {name: "Refresh local directory", exact: true}).click();
+        for (const name of names) {
+          await pane(page, "local").getByRole("checkbox", {name: `Select ${name}`, exact: true}).check();
+        }
+        await begin(page, "local", names[0]);
+        await move(page, target);
+      }
+      const preview = page.locator(origin === "Explorer" ? ".file-native-drop-hint" : ".file-drag-ghost");
+      await expect(preview.locator("strong")).toHaveText("Upload 2 items to Alpha");
+      await expect(preview.locator("span")).toHaveText(destination);
+      await expect(pane(page, "remote").locator(".path-bar")).toHaveClass(/file-drop-target/);
+      if (origin === "Explorer") await nativeDrop(page, target, paths);
+      else await page.mouse.up();
+      await expectTransfers(page, names.map((name, i) => plan("upload", paths[i], `${destination}/${name}`)));
+      assert.equal(new Set((await transfers(page)).map(t => t.batchId)).size, 1);
+      await expect(directoryPath(page, "remote")).toHaveValue(destination);
+    });
+    await run(`${origin} rejects an edited remote path before navigation`, async page => {
+      const field = directoryPath(page, "remote");
+      await field.fill("/different/folder");
+      const target = await center(field);
+      if (origin === "Explorer") await nativeDrop(page, target);
+      else await drag(page, "local", target);
+      await expectTransfers(page, []);
+      await expect(field).toHaveValue("/different/folder");
+    });
+  }
   for (const target of ["local", "file", "control", "outside", "disconnect"]) {
     await run(`native Explorer rejects ${target} target`, async page => {
       const point = target === "local" ? await background(page, "local")
         : target === "file" ? await center(file(page, "remote"))
-          : target === "control" ? await center(directoryPath(page, "remote"))
+          : target === "control" ? await center(pane(page, "remote").getByRole("button", { name: "Parent directory", exact: true }))
             : target === "outside" ? { x: 2, y: 2 } : await background(page, "remote");
       if (target === "disconnect") { await page.evaluate(() => window.fixture.disconnect()); await expect.poll(() => page.evaluate(() => window.fixture.nativeListeners.size)).toBe(0); }
       await nativeDrop(page, point);

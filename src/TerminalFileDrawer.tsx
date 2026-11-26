@@ -364,6 +364,8 @@ export function TerminalFileDrawer({
       </header>
       <form
         className="drawer-address"
+        data-file-drop-path={listing && session.status === "connected" && address === listing.path ? "remote" : undefined}
+        data-upload-hover={hover?.onPathBar && address === listing?.path ? "true" : undefined}
         onSubmit={(event) => {
           event.preventDefault();
           if (address) navigate(address);
@@ -439,7 +441,7 @@ export function TerminalFileDrawer({
           className="drawer-entries"
           aria-label="Remote entries"
           data-upload-hover={
-            hover && hover.path === listing?.path ? "true" : undefined
+            hover && !hover.onPathBar && hover.path === listing?.path ? "true" : undefined
           }
           aria-busy={!ready}
         >

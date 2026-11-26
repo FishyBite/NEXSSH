@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { desktop } from "./api";
 import { drawerUploadPlan } from "./fileTransferDrag";
-import { captureNativeFileDropLayout } from "./nativeFileDropLayout";
+import { captureNativeFileDropLayout, remoteDropPathBar } from "./nativeFileDropLayout";
 import { queueFileTransfers } from "./queueFileTransfers";
 import { message, type FileEntry, type Session } from "./types";
 
@@ -14,7 +14,7 @@ export function useDrawerUpload(
   onAccepted?: () => void,
   onQueued?: () => void,
 ) {
-  const [hover, setHover] = useState<{ path: string; count: number } | null>(null);
+  const [hover, setHover] = useState<{ path: string; count: number; onPathBar: boolean } | null>(null);
   const latestNotify = useRef(notify);
   latestNotify.current = notify;
   const accepted = useRef(onAccepted);
@@ -25,6 +25,7 @@ export function useDrawerUpload(
     setHover(null);
     const list = listRef.current;
     if (!desktop || !list || !listing || session.status !== "connected") return;
+    const drawer = list.closest(".terminal-file-drawer");
     const directories = new Set(
       listing.entries.filter((item) => item.isDir).map((item) => item.path),
     );
@@ -54,11 +55,13 @@ export function useDrawerUpload(
         position.x / scale,
         position.y / scale,
       );
+      const pathBar = remoteDropPathBar(hit);
+      if (pathBar && drawer?.contains(pathBar)) return { path: listing.path, onPathBar: true };
       if (!hit || !list.contains(hit)) return null;
       const folder = hit.closest<HTMLElement>("[data-drawer-directory]")
         ?.dataset.drawerDirectory;
-      if (folder) return directories.has(folder) ? folder : null;
-      return listing.path;
+      if (folder && !directories.has(folder)) return null;
+      return { path: folder || listing.path, onPathBar: false };
     };
     void currentWindow
       .onDragDropEvent((event) => {
@@ -84,12 +87,14 @@ export function useDrawerUpload(
           void origin.scale
             .then((scale) => {
               if (!disposed && gesture === origin && hoverEvent === serial) {
-                origin.advertised = destinationAt(drop.position, scale);
-                const path = origin.advertised;
+                const target = destinationAt(drop.position, scale);
+                origin.advertised = target?.path ?? null;
                 const count = origin.paths.size;
-                setHover(previous => path && count
-                  ? previous?.path === path && previous.count === count ? previous : { path, count }
-                  : null);
+                setHover(previous => {
+                  if (!target || !count) return null;
+                  if (previous?.path === target.path && previous.count === count && previous.onPathBar === target.onPathBar) return previous;
+                  return { ...target, count };
+                });
               }
             })
             .catch(() => {
@@ -114,10 +119,10 @@ export function useDrawerUpload(
           .then(async (scale) => {
             if (disposed || ticket !== revision || !unchanged()) return;
             const target = destinationAt(drop.position, scale);
-            if (!target || target !== origin.advertised) return;
+            if (!target || target.path !== origin.advertised) return;
             const plan = drawerUploadPlan(
               [...paths],
-              target,
+              target.path,
               session.id,
               session.name,
             );

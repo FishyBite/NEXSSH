@@ -274,6 +274,11 @@
   box-shadow: inset 0 0 0 2px var(--accent);
   background: var(--selection);
 }
+.files-page .path-bar.file-drop-target input {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  background: var(--selection);
+}
 .files-page .file-row.drop-target {
   background: var(--selection);
   outline: 2px solid var(--accent);

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type PointerEvent, type RefObject } from "
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { desktop } from "./api";
 import { message } from "./types";
-import { captureNativeFileDropLayout } from "./nativeFileDropLayout";
+import { captureNativeFileDropLayout, remoteDropPathBar } from "./nativeFileDropLayout";
 import {
   acceptFileDrop,
   captureExternalFiles,
@@ -22,8 +22,11 @@ export function fileDropHit(
   target: FileDropTarget | null;
   list?: HTMLElement;
   row?: HTMLElement;
+  pathBar?: HTMLElement;
 } {
   const element = document.elementFromPoint(x, y);
+  const pathBar = remoteDropPathBar(element);
+  if (pathBar) return { target: { side: "remote" }, pathBar };
   const list = element?.closest<HTMLElement>("[data-file-drop-list]");
   if (!element || !list) return { target: null };
   const side = list.dataset.fileDropList;
@@ -144,9 +147,9 @@ export function useFileDrag(
       if (cancelled) return;
       const context = current.current.getContext();
       hit = fileDropHit(x, y);
-      if (!hit.list || !button.closest(".files-page")?.contains(hit.list)) hit = { target: null };
+      if (!button.closest(".files-page")?.contains(hit.pathBar || hit.list || null)) hit = { target: null };
       const accepted = acceptFileDrop(snapshot, context, hit.target);
-      const targetElement = accepted ? hit.row || hit.list : undefined;
+      const targetElement = accepted ? hit.pathBar || hit.row || hit.list : undefined;
       const targetClass = hit.row ? "drop-target" : "file-drop-target";
       if (targetElement !== highlight || targetClass !== highlightClass) {
         clearHighlight();
@@ -272,7 +275,7 @@ export function useFileDrag(
   return { drag, ghostRef, startDrag, ignoreClick: () => ignoredClick.current };
 }
 
-export type NativeDropPreview = { snapshot: FileDragSnapshot; destination: string };
+export type NativeDropPreview = { snapshot: FileDragSnapshot; destination: string; onPathBar: boolean };
 
 export function useNativeFileDrop(
   page: RefObject<HTMLElement | null>, sessionId: string | undefined, protocol: string,
@@ -320,19 +323,24 @@ export function useNativeFileDrop(
         if (actual.size !== snapshot.entries.length || snapshot.entries.some(entry => !actual.has(entry.path))) return;
       }
       const list = page.current?.querySelector<HTMLElement>('[data-file-drop-list="remote"]') || null;
+      const pane = list?.closest('[data-file-side="remote"]');
       const layoutUnchanged = dropping && captureNativeFileDropLayout(list);
       try {
         const scale = await win.scaleFactor();
         if (disposed || (!dropping && ticket !== revision) || !Number.isFinite(scale) || scale <= 0 || (layoutUnchanged && !layoutUnchanged())) return;
         const hit = fileDropHit(payload.position.x / scale, payload.position.y / scale);
-        const plan = list && hit.list === list ? acceptFileDrop(snapshot, latest.current.getContext(), hit.target) : null;
+        const plan = pane?.contains(hit.pathBar || hit.list || null)
+          ? acceptFileDrop(snapshot, latest.current.getContext(), hit.target)
+          : null;
         if (dropping) {
           if (plan && (!origin || origin.advertised === plan.destinationDirectory)) await latest.current.onDrop(plan);
         } else if (origin) {
           origin.advertised = plan?.destinationDirectory || null;
           const destination = origin.advertised;
+          const onPathBar = !!hit.pathBar;
           setPreview(previous => destination
-            ? previous?.snapshot === snapshot && previous.destination === destination ? previous : { snapshot, destination }
+            ? previous?.snapshot === snapshot && previous.destination === destination && previous.onPathBar === onPathBar
+              ? previous : { snapshot, destination, onPathBar }
             : null);
         }
       } catch (error) {
