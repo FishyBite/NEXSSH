@@ -357,7 +357,7 @@ try {
           expanded,
           scrollResult,
           injectError: process.env.VEXSSH_INJECT_RENDER_ERROR === "1" || process.env.VEXSSH_TERMINAL_RETRY === "1",
-          persistConfig: process.env.VEXSSH_ENHANCEMENTS === "1" || process.env.VEXSSH_SIDEBAR_NAVIGATION === "1" || process.env.VEXSSH_TERMINAL_APPEARANCE === "1" || process.env.VEXSSH_APP_THEMES === "1",
+          persistConfig: process.env.VEXSSH_ENHANCEMENTS === "1" || process.env.VEXSSH_SIDEBAR_NAVIGATION === "1" || process.env.VEXSSH_TERMINAL_APPEARANCE === "1" || process.env.VEXSSH_APP_THEMES === "1" || process.env.VEXSSH_RECORD_RATE === "1",
           currentVersion: tauri.version,
           terminalClipboard: process.env.VEXSSH_TERMINAL_CLIPBOARD === "1",
         },
@@ -417,6 +417,13 @@ try {
         if (process.env.VEXSSH_TERMINAL_APPEARANCE === "1") {
           const { exerciseTerminalAppearance } = await import("./desktop-terminal-appearance.mjs");
           reports.push(await exerciseTerminalAppearance({page, expect, fixture, nav}));
+          assert.deepEqual(errors, []);
+          assert.deepEqual(consoleErrors, []);
+          continue;
+        }
+        if (process.env.VEXSSH_RECORD_RATE === "1") {
+          const { exerciseRecordingAndRates } = await import("./desktop-record-rate.mjs");
+          reports.push(await exerciseRecordingAndRates({ page, expect, nav }));
           assert.deepEqual(errors, []);
           assert.deepEqual(consoleErrors, []);
           continue;

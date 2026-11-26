@@ -1,0 +1,36 @@
+name: Update Windows downloads
+on:
+  release:
+    types: [published, edited, unpublished, deleted]
+  workflow_dispatch:
+
+concurrency:
+  group: windows-download-index
+  cancel-in-progress: false
+
+jobs:
+  index:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: main
+      - name: Refresh the version list
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git checkout --detach FETCH_HEAD
+            python3 tools/build_download_index.py
+            git add -- DOWNLOADS.md
+            if git diff --cached --quiet; then exit 0; fi
+            git commit -m 'Refresh Windows download links'
+            if git push origin HEAD:refs/heads/main; then exit 0; fi
+          done
+          exit 1

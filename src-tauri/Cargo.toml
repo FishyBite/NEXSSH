@@ -1,6 +1,6 @@
 [package]
 name = "vexssh"
-version = "1.0.0-rc.10"
+version = "1.0.0-rc.11"
 edition = "2021"
 description = "VEXSSH desktop SSH workspace"
 
@@ -12,6 +12,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
+chrono = { version = "0.4", default-features = false, features = ["std"] }
 tauri = { version = "2", features = [] }
 tauri-plugin-dialog = "2"
 tokio = { version = "1", features = ["net", "time", "rt"] }

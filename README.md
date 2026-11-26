@@ -6,7 +6,7 @@
 
 <p align="center">SSH · SFTP/SCP · Serial · Databases</p>
 
-<p align="center"><a href="#preview">Screenshots</a> · <a href="#download">Download</a></p>
+<p align="center"><strong><a href="https://github.com/FishyBite/VEXSSH/blob/main/DOWNLOADS.md">Download for Windows</a></strong> · <a href="#preview">Screenshots</a></p>
 
 VEXSSH is a Windows app for working with servers and serial devices. Open a saved host, switch to SFTP to move or edit files, then return to the same shell.
 
@@ -45,6 +45,12 @@ Screenshots from RC8 with sample connections.
 - **Serial** for Windows COM ports. The port list updates when a USB adapter is plugged in or removed. The selector shows device information reported by Windows. Save the baud rate, parity, stop bits, and flow control for each device.
 - **Databases** with a query editor and object browser. Connect directly or through an existing SSH session. SQLite opens a local file.
 
+## Serial logs and SFTP speed limits
+
+In a connected **Serial** console, select **Record log** and choose a new log file. Each line of received text has a UTC timestamp with milliseconds. Select **Stop recording** to finish the file. A device can echo what you type into its output, so review a log before sharing it.
+
+Open **Settings → File transfer** to set independent SFTP upload and download limits in KiB/s. Use **Save changes** to apply them to running and future transfers. Each direction shares its limit across active SFTP transfers, including transfers of folders. For example, 512 sets a shared limit of 512 KiB/s. Set either limit to 0 for unlimited speed in that direction.
+
 ## Application appearance
 
 Open **Settings → Appearance**, select a theme, and choose **Save changes**. Midnight, Graphite, Forest, and Dusk have dark backgrounds. Paper and Mist have light backgrounds. The choice applies across the workspace, including the sidebar, SFTP file manager, database tools, and serial console. Choose **System** to follow Windows.
@@ -59,21 +65,23 @@ Use the color picker or enter a hex value to change ordinary terminal text. Prog
 
 ## Download
 
-For Windows x64, use [Online Setup or Portable from the RC10 release](../../releases/tag/v1.0.0-rc.10).
+Use **Download for Windows** at the top of this page to see the release history. Choose an installer or portable executable from the first row for the newest version, or scroll down for an older one.
 
-RC10 is unsigned. Download from the release page and compare the file with its entry in **SHA256SUMS.txt** using PowerShell:
+- **Online Setup** installs or upgrades VEXSSH, creates a desktop shortcut, and downloads WebView2 if needed.
+- **Portable** runs directly on a computer that already has WebView2.
+- **SHA256SUMS.txt** contains the checksums for that version.
+
+RC11 is unsigned. Download from the release page and compare the file with its entry in **SHA256SUMS.txt** using PowerShell:
 
 ```powershell
-Get-FileHash .\VEXSSH-1.0.0-rc.10-Windows-x64-Online-Setup.exe -Algorithm SHA256
+Get-FileHash .\VEXSSH-1.0.0-rc.11-Windows-x64-Online-Setup.exe -Algorithm SHA256
 ```
 
 A matching hash confirms that the file matches the published build. Windows SmartScreen and Chrome may still display a reputation warning for an unfamiliar download.
 
-Previous downloads include [RC9](../../releases/tag/v1.0.0-rc.9), [RC8](../../releases/tag/v1.0.0-rc.8) and [RC7](../../releases/tag/v1.0.0-rc.7).
-
 ## Application data
 
-The RC10 Windows download uses the same profile and vault locations as RC7 and RC8. To build the Windows release with those locations, check out the `v1.0.0-rc.10` tag. Development builds from `main` use their own storage.
+The RC11 Windows download uses the same profile and vault locations as the RC7 through RC10 installers. To build the Windows release with those locations, check out the `v1.0.0-rc.11` tag. Development builds from `main` use their own storage.
 
 ## Run on Windows
 

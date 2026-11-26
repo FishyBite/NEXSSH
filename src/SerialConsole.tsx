@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
-import { Cable, RotateCw, Unplug } from "lucide-react";
+import { Cable, Circle, RotateCw, Square, Unplug } from "lucide-react";
+import { save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { request, subscribe } from "./api";
 import { readClipboardText, writeClipboardText } from "./clipboard";
 import { getTerminalTheme } from "./terminalThemes";
@@ -36,7 +37,59 @@ export default function SerialConsole({
   const [status, setStatus] = useState<Status>("Connecting");
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(1);
+  const recording = useRef<{ id: string; path: string; started: boolean } | null>(null);
+  const changingRecording = useRef(false);
+  const [recordingPath, setRecordingPath] = useState("");
+  const [recordingBusy, setRecordingBusy] = useState(false);
+  const [savedLog, setSavedLog] = useState("");
+  const [logError, setLogError] = useState("");
   const theme = settings.followAppTheme ? appearance : settings.terminalTheme;
+
+  function finishRecording(saved: boolean) {
+    if (saved && recording.current?.started) setSavedLog(recording.current.path);
+    recording.current = null;
+    setRecordingPath("");
+  }
+
+  async function toggleRecording() {
+    const id = transport.current;
+    if (!id || changingRecording.current) return;
+    changingRecording.current = true;
+    setRecordingBusy(true);
+    setLogError("");
+    const current = recording.current;
+    try {
+      if (current) {
+        await request("serial_record_stop", { id, recordingId: current.id });
+        if (recording.current === current) finishRecording(true);
+      } else {
+        const stamp = new Date().toISOString().replace(/:/g, "-");
+        const path = await saveDialog({
+          title: "Save timestamped Serial log",
+          defaultPath: `${profile.port}-${stamp}.log`,
+          filters: [{ name: "Serial log", extensions: ["log", "txt"] }],
+        });
+        if (!path || transport.current !== id || !mount.current?.offsetWidth) return;
+        const next = { id: crypto.randomUUID(), path, started: false };
+        recording.current = next;
+        setSavedLog("");
+        await request("serial_record_start", { id, recordingId: next.id, path });
+        if (transport.current === id && recording.current === next) {
+          next.started = true;
+          setRecordingPath(path);
+        }
+      }
+    } catch (e) {
+      if (transport.current === id) {
+        if (!current) finishRecording(false);
+        setLogError(message(e));
+      }
+    } finally {
+      changingRecording.current = false;
+      setRecordingBusy(false);
+      if (transport.current === id && mount.current?.offsetWidth && !document.querySelector('[role="dialog"]')) terminal.current?.focus();
+    }
+  }
 
   useEffect(() => {
     const container = mount.current!;
@@ -168,12 +221,24 @@ export default function SerialConsole({
         return;
       }
       listeners.push(onData);
-      const onClosed = await subscribe<{ id: string; error: string }>(
+      const onRecordError = await subscribe<{ id: string; recordingId: string; error: string }>(
+        "serial-record-error", packet => {
+          if (!disposed && packet.id === id && packet.recordingId === recording.current?.id) {
+            finishRecording(false);
+            setLogError(packet.error);
+          }
+        },
+      );
+      if (disposed) { onRecordError(); return; }
+      listeners.push(onRecordError);
+      const onClosed = await subscribe<{ id: string; error: string; recordingError?: string }>(
         "serial-closed",
         (packet) => {
           if (disposed || packet.id !== id) return;
           ended = true;
           transport.current = null;
+          finishRecording(!packet.recordingError);
+          if (packet.recordingError) setLogError(packet.recordingError);
           setStatus("Disconnected");
           setError(packet.error);
           void close();
@@ -207,6 +272,7 @@ export default function SerialConsole({
     return () => {
       disposed = true;
       transport.current = null;
+      recording.current = null;
       listeners.forEach((remove) => remove());
       input.dispose();
       if (opening) void close();
@@ -219,9 +285,12 @@ export default function SerialConsole({
     transport.current = null;
     try {
       await request("serial_close", { id });
+      finishRecording(true);
       setAttempt(0);
       setStatus("Disconnected");
     } catch (e) {
+      finishRecording(false);
+      setAttempt(0);
       setError(message(e));
       setStatus("Disconnected");
     }
@@ -241,21 +310,32 @@ export default function SerialConsole({
           </span>
           <span role="status">{status}</span>
         </div>
-        {status === "Disconnected" ? (
-          <Button onClick={() => setAttempt((n) => n + 1)}>
-            <RotateCw size={15} />
-            Reconnect
-          </Button>
-        ) : (
-          <Button
-            disabled={status !== "Connected"}
-            onClick={() => void disconnect()}
-          >
-            <Unplug size={15} />
-            Disconnect
-          </Button>
-        )}
+        <div className="serial-console-actions">
+          {status === "Connected" && <Button onClick={() => void toggleRecording()} busy={recordingBusy}
+            aria-pressed={!!recordingPath} title={recordingPath || "Save received device output with UTC timestamps"}>
+            {recordingPath ? <Square size={14} /> : <Circle size={14} />}
+            {recordingPath ? "Stop recording" : "Record log"}
+          </Button>}
+          {status === "Disconnected" ? (
+            <Button onClick={() => setAttempt((n) => n + 1)}>
+              <RotateCw size={15} />
+              Reconnect
+            </Button>
+          ) : (
+            <Button
+              disabled={status !== "Connected"}
+              onClick={() => void disconnect()}
+            >
+              <Unplug size={15} />
+              Disconnect
+            </Button>
+          )}
+        </div>
       </header>
+      {(recordingPath || savedLog) && <div className="serial-recording-note" aria-live="polite">
+        {recordingPath ? "Recording to " : "Log saved to "}<span>{recordingPath || savedLog}</span>
+      </div>}
+      <ErrorBox error={logError} />
       <ErrorBox error={error} />
       <div
         ref={mount}

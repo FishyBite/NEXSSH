@@ -46,6 +46,7 @@ fn remote_hash(
     sftp: &Sftp,
     path: &str,
     cancel: &AtomicBool,
+    download_limit: &bandwidth::RateLimit,
 ) -> Result<String, String> {
     files::remote_regular(sftp, Path::new(path))?;
     let shell_hash = || -> Result<String, String> {
@@ -78,6 +79,7 @@ fn remote_hash(
         checksum(
             sftp.open(Path::new(path)).map_err(|e| e.to_string())?,
             cancel,
+            Some(download_limit),
         )
     })
 }
@@ -92,6 +94,7 @@ pub(super) fn discard_verified(
     sftp: &Sftp,
     transfer: &Transfer,
     cancel: &AtomicBool,
+    download_limit: &bandwidth::RateLimit,
 ) -> Result<(), String> {
     let Some(partial) = &transfer.partial else {
         return Ok(());
@@ -106,9 +109,9 @@ pub(super) fn discard_verified(
         return Ok(());
     }
     let digest = if upload {
-        remote_hash(session, sftp, staged, cancel)?
+        remote_hash(session, sftp, staged, cancel, download_limit)?
     } else {
-        checksum(fs::File::open(&path).map_err(|e| e.to_string())?, cancel)?
+        checksum(fs::File::open(&path).map_err(|e| e.to_string())?, cancel, None)?
     };
     if digest == partial.prefix_sha256 {
         if upload {
@@ -129,10 +132,16 @@ fn copy_tail(
 ) -> Result<(), String> {
     let mut offset = offset;
     let size = progress.transfer.partial.as_ref().unwrap().size;
+    let limits = &progress.state.inner.sftp_bandwidth;
+    let limit = if progress.transfer.direction == "upload" {
+        &limits.upload
+    } else {
+        &limits.download
+    };
     let mut buffer = [0u8; 65536];
     while offset < size {
-        check_cancel(progress.cancelled)?;
-        let n = (size - offset).min(buffer.len() as u64) as usize;
+        let remaining = (size - offset).min(buffer.len() as u64) as usize;
+        let n = limit.grant(remaining, progress.cancelled)?;
         reader
             .read_exact(&mut buffer[..n])
             .map_err(|e| format!("Could not read source: {e}"))?;
@@ -162,6 +171,7 @@ pub(super) fn copy(
     progress: &mut Progress<'_>,
 ) -> Result<(), String> {
     let upload = progress.transfer.direction == "upload";
+    let download_limit = &progress.state.inner.sftp_bandwidth.download;
     let verify_source = || -> Result<(), String> {
         let source =
             conflict::inspect(sftp, !upload, &entry.source)?.ok_or("Source no longer exists")?;
@@ -180,9 +190,10 @@ pub(super) fn copy(
         checksum(
             fs::File::open(&entry.source).map_err(|e| e.to_string())?,
             progress.cancelled,
+            None,
         )?
     } else {
-        remote_hash(session, sftp, &entry.source, progress.cancelled)?
+        remote_hash(session, sftp, &entry.source, progress.cancelled, download_limit)?
     };
     let existing = progress.transfer.partial.clone();
     let partial = if let Some(partial) = &existing {
@@ -238,7 +249,9 @@ pub(super) fn copy(
             return Err("Partial file exceeds source size. Start a new transfer.".into());
         }
         let digest = hash_prefix(&mut source, offset, progress.cancelled)?;
-        if has_stage && remote_hash(session, sftp, staged, progress.cancelled)? != hex(&digest) {
+        if has_stage
+            && remote_hash(session, sftp, staged, progress.cancelled, download_limit)? != hex(&digest)
+        {
             return Err("Partial file contents changed. Start a new transfer.".into());
         }
         let flags = if has_stage {
@@ -259,7 +272,7 @@ pub(super) fn copy(
         progress.advance(offset)?;
         copy_tail(&mut source, &mut target, offset, digest, progress)?;
         target.close().map_err(|e| e.to_string())?;
-        if remote_hash(session, sftp, staged, progress.cancelled)? != source_hash {
+        if remote_hash(session, sftp, staged, progress.cancelled, download_limit)? != source_hash {
             return Err("Uploaded file failed SHA-256 verification".into());
         }
     } else {
@@ -291,8 +304,7 @@ pub(super) fn copy(
         let mut b = [0u8; 65536];
         let mut extra = offset - partial.verified_bytes;
         while extra > 0 {
-            check_cancel(progress.cancelled)?;
-            let n = extra.min(a.len() as u64) as usize;
+            let n = download_limit.grant(extra.min(a.len() as u64) as usize, progress.cancelled)?;
             source.read_exact(&mut a[..n]).map_err(|e| e.to_string())?;
             target.read_exact(&mut b[..n]).map_err(|e| e.to_string())?;
             if a[..n] != b[..n] {

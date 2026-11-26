@@ -16,6 +16,7 @@ use std::{
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 use tauri::Emitter;
+pub(crate) mod bandwidth;
 mod conflict;
 #[cfg(test)]
 mod integration;
@@ -389,12 +390,20 @@ fn stream_copy(
     Ok(format!("{:x}", digest.finalize()))
 }
 
-fn checksum(mut reader: impl Read, cancelled: &AtomicBool) -> Result<String, String> {
+fn checksum(
+    mut reader: impl Read,
+    cancelled: &AtomicBool,
+    limit: Option<&bandwidth::RateLimit>,
+) -> Result<String, String> {
     let mut digest = Sha256::new();
     let mut buffer = [0u8; 64 * 1024];
     loop {
         check_cancel(cancelled)?;
-        let count = reader.read(&mut buffer).map_err(|e| e.to_string())?;
+        let n = match limit {
+            Some(limit) => limit.grant(buffer.len(), cancelled)?,
+            None => buffer.len(),
+        };
+        let count = reader.read(&mut buffer[..n]).map_err(|e| e.to_string())?;
         if count == 0 {
             break;
         }
@@ -412,12 +421,15 @@ fn already_completed(
     let Some(expected) = progress.transfer.completed_files.get(&entry.destination) else {
         return Ok(false);
     };
+    let download_limit = (progress.transfer.protocol == "sftp")
+        .then_some(&progress.state.inner.sftp_bandwidth.download);
     let destination_hash = if direction == "upload" {
         files::remote_regular(sftp, Path::new(&entry.destination))?;
         checksum(
             sftp.open(Path::new(&entry.destination))
                 .map_err(|e| e.to_string())?,
             progress.cancelled,
+            download_limit,
         )?
     } else {
         let metadata = fs::symlink_metadata(&entry.destination).map_err(|e| e.to_string())?;
@@ -427,6 +439,7 @@ fn already_completed(
         checksum(
             fs::File::open(&entry.destination).map_err(|e| e.to_string())?,
             progress.cancelled,
+            None,
         )?
     };
     if &destination_hash != expected {
@@ -446,6 +459,7 @@ fn already_completed(
         checksum(
             fs::File::open(&entry.source).map_err(|e| e.to_string())?,
             progress.cancelled,
+            None,
         )?
     } else {
         files::remote_regular(sftp, Path::new(&entry.source))?;
@@ -453,6 +467,7 @@ fn already_completed(
             sftp.open(Path::new(&entry.source))
                 .map_err(|e| e.to_string())?,
             progress.cancelled,
+            download_limit,
         )?
     };
     if &source_hash != expected {
@@ -602,7 +617,9 @@ fn execute(
     session.set_timeout(15_000);
     let sftp = session.sftp().map_err(|e| e.to_string())?;
     if transfer.restart_requested {
-        resume::discard_verified(&session, &sftp, transfer, cancelled)?;
+        resume::discard_verified(
+            &session, &sftp, transfer, cancelled, &state.inner.sftp_bandwidth.download,
+        )?;
         transfer.partial = None;
         transfer.restart_requested = false;
         persist(state, transfer)?;
@@ -724,6 +741,7 @@ fn execute(
                             &sftp,
                             progress.transfer,
                             progress.cancelled,
+                            &state.inner.sftp_bandwidth.download,
                         )?;
                         progress.transfer.partial = None;
                     }

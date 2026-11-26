@@ -31,6 +31,14 @@ describe("workspace compatibility", () => {
     const config = normalizeConfig({ settings: { ...defaultSettings, copyOnSelect: false } });
     expect(config.settings.copyOnSelect).toBe(false);
   });
+  it("defaults legacy SFTP limits to unlimited and validates each direction independently", () => {
+    expect(normalizeConfig({}).settings.sftpUploadLimitKiB).toBe(0);
+    for (const invalid of [-1, 0.5, 1_048_577, "128", null]) {
+      const value = JSON.parse(JSON.stringify({settings: {sftpUploadLimitKiB: invalid, sftpDownloadLimitKiB: 128}}));
+      expect(normalizeConfig(value).settings).toMatchObject({sftpUploadLimitKiB: 0, sftpDownloadLimitKiB: 128});
+    }
+    expect(normalizeConfig({settings: {...defaultSettings, sftpUploadLimitKiB: 1_048_576}}).settings.sftpUploadLimitKiB).toBe(1_048_576);
+  });
   it("upgrades older host records and preserves stored terminal preferences", () => {
     const config = normalizeConfig({
       hosts: [

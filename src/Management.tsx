@@ -26,7 +26,7 @@ import type {
   Settings,
   TerminalProfile,
 } from "./types";
-import { message, uid } from "./types";
+import { maxSftpLimitKiB, message, uid, validSftpLimit } from "./types";
 import { appThemes, appThemeOptions, type AppTheme } from "./appThemes";
 import { getTerminalTheme, validTerminalForeground } from "./terminalThemes";
 import { terminalFontFamilies, TerminalPaletteOptions, TerminalPreview, TerminalTextColor } from "./TerminalAppearance";
@@ -1073,6 +1073,7 @@ export function SettingsView({
   const palette = getTerminalTheme(previewPalette);
   const previewColors = getTerminalTheme(previewPalette, draft.terminalForeground);
   const invalidForeground = !!draft.terminalForeground && !validTerminalForeground(draft.terminalForeground);
+  const invalidTransferLimit = !validSftpLimit(draft.sftpUploadLimitKiB) || !validSftpLimit(draft.sftpDownloadLimitKiB);
   const [busy, setBusy] = useState(false);
   const [backup, setBackup] = useState<"export" | "import" | null>(null);
   const [password, setPassword] = useState("");
@@ -1100,6 +1101,10 @@ export function SettingsView({
   const persist = async () => {
     if (invalidForeground) {
       setTab("Terminal");
+      return;
+    }
+    if (invalidTransferLimit) {
+      setTab("File transfer");
       return;
     }
     setBusy(true);
@@ -1154,7 +1159,7 @@ export function SettingsView({
         title="Settings"
         description="Make this workspace feel like yours."
       >
-        <Button variant="primary" busy={busy} disabled={tab === "Terminal" && invalidForeground} onClick={() => void persist()}>
+        <Button variant="primary" busy={busy} disabled={(tab === "Terminal" && invalidForeground) || (tab === "File transfer" && invalidTransferLimit)} onClick={() => void persist()}>
           <Save size={15} />
           Save changes
         </Button>
@@ -1431,6 +1436,21 @@ export function SettingsView({
                   }
                 />
               </Field>
+              {([
+                ["sftpUploadLimitKiB", "SFTP upload limit (KiB/s)"],
+                ["sftpDownloadLimitKiB", "SFTP download limit (KiB/s)"],
+              ] as const).map(([key, label]) => (
+                <Field key={key} label={label}>
+                  <input type="number" min={0} max={maxSftpLimitKiB} step={1}
+                    value={Number.isFinite(draft[key]) ? draft[key] : ""}
+                    aria-invalid={!validSftpLimit(draft[key])} aria-describedby="sftp-limit-help"
+                    onChange={event => set(key, event.currentTarget.valueAsNumber)} />
+                </Field>
+              ))}
+              <p className="field-note" id="sftp-limit-help">
+                {invalidTransferLimit && "Enter a whole number from 0 to 1,048,576. "}
+                Set 0 for unlimited speed. Active SFTP transfers share the limit for their direction.
+              </p>
               <p>
                 Interrupted transfers can be retried from the transfer history.
               </p>

@@ -179,10 +179,17 @@ fn transport_disconnect_resume_and_conflict_policies() {
             }
         }
         transfer.transferred_bytes = 0;
+        state.save_config(json!({"hosts":[],"settings":{
+            "sftpUploadLimitKiB": if upload { 512 } else { 0 },
+            "sftpDownloadLimitKiB": if upload { 0 } else { 512 }
+        }})).unwrap();
         let mut p = progress(&state, &mut transfer, &cancel);
+        let resumed_at = Instant::now();
         resume::copy(&reconnected, &sftp, &entry, None, &mut p).unwrap();
         assert!(p.transfer.resumed_bytes > 0);
         assert_eq!(p.network_bytes + p.transfer.resumed_bytes, entry.size);
+        let minimum = Duration::from_secs_f64(p.network_bytes as f64 / (512.0 * 1024.0));
+        assert!(resumed_at.elapsed() + Duration::from_millis(51) >= minimum);
         println!(
             "{}: {} bytes, resumed at {}, sent {} remaining bytes",
             if upload { "upload" } else { "download" },

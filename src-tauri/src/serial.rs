@@ -12,6 +12,8 @@ use std::thread::{self, JoinHandle};
 use std::time::Duration;
 use tauri::{AppHandle, Emitter, Manager};
 use uuid::Uuid;
+mod recording;
+use recording::Recording;
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -83,8 +85,9 @@ impl Options {
 struct Session {
     port: String,
     stopping: Arc<AtomicBool>,
+    recording: Arc<Recording>,
     input: mpsc::SyncSender<Vec<u8>>,
-    worker: JoinHandle<()>,
+    worker: JoinHandle<Result<(), String>>,
 }
 
 #[derive(Serialize)]
@@ -121,9 +124,11 @@ fn describe_port(port: SerialPortInfo, in_use: bool) -> DetectedPort {
 }
 
 impl Session {
-    fn stop(self) {
+    fn stop(self) -> Result<(), String> {
         self.stopping.store(true, Ordering::Release);
-        let _ = self.worker.join();
+        self.worker
+            .join()
+            .map_err(|_| "The serial worker stopped unexpectedly.")?
     }
 }
 
@@ -134,7 +139,7 @@ impl SerialSessions {
     pub fn close_all(&self) {
         if let Ok(mut sessions) = self.0.lock() {
             for (_, session) in sessions.drain() {
-                session.stop();
+                let _ = session.stop();
             }
         }
     }
@@ -226,24 +231,48 @@ pub fn dispatch(app: &AppHandle, action: &str, payload: Value) -> Result<Value, 
             let stopping = Arc::new(AtomicBool::new(false));
             let stop = Arc::clone(&stopping);
             let (tx, rx) = mpsc::sync_channel(128);
+            let recording = Arc::new(Recording::default());
+            let capture = Arc::clone(&recording);
             let window = app.clone();
             let worker = thread::Builder::new().name("serial-io".into()).spawn(move || {
                 let result = exchange(port, rx, &stop, |bytes| {
+                    capture.received(bytes);
                     let _ = window.emit("serial-data", json!({"id": id.to_string(), "data": STANDARD.encode(bytes)}));
                 });
+                let finalized = capture.close();
                 if let Err(error) = result {
-                    let _ = window.emit("serial-closed", json!({"id": id.to_string(), "error": format!("Serial connection ended: {error}")}));
+                    let _ = window.emit("serial-closed", json!({"id": id.to_string(), "error": format!("Serial connection ended: {error}"), "recordingError": finalized.as_ref().err()}));
                 }
+                finalized
             }).map_err(|e| e.to_string())?;
             sessions.insert(
                 id,
                 Session {
                     port: options.port.trim().to_owned(),
                     stopping,
+                    recording,
                     input: tx,
                     worker,
                 },
             );
+        }
+        "serial_record_start" | "serial_record_stop" => {
+            let recording_id = Uuid::parse_str(crate::required(&payload, "recordingId")?)
+                .map_err(|_| "Invalid recording ID.")?;
+            let recording =
+                Arc::clone(&sessions.get(&id).ok_or("Serial port is closed.")?.recording);
+            drop(sessions);
+            if action == "serial_record_stop" {
+                recording.stop(recording_id)?;
+            } else {
+                let path = std::path::Path::new(crate::required(&payload, "path")?);
+                let window = app.clone();
+                recording.start(recording_id, path, move |error| {
+                    let _ = window.emit("serial-record-error", json!({
+                        "id": id.to_string(), "recordingId": recording_id.to_string(), "error": error
+                    }));
+                })?;
+            }
         }
         "serial_write" => {
             let text = crate::required(&payload, "text")?;
@@ -262,7 +291,8 @@ pub fn dispatch(app: &AppHandle, action: &str, payload: Value) -> Result<Value, 
         }
         "serial_close" => {
             if let Some(session) = sessions.remove(&id) {
-                session.stop();
+                drop(sessions);
+                session.stop()?;
             }
         }
         _ => return Err("Unknown serial action.".into()),
@@ -329,9 +359,20 @@ mod tests {
             first_read: true,
         };
         let mut output = Vec::new();
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("device.log");
+        let capture = Recording::default();
+        capture
+            .start(Uuid::new_v4(), &path, |error| panic!("{error}"))
+            .unwrap();
         let result = exchange(&mut device, rx, &AtomicBool::new(false), |data| {
+            capture.received(data);
             output.extend_from_slice(data)
         });
+        capture.close().unwrap();
+        let log = std::fs::read_to_string(path).unwrap();
+        assert!(log.ends_with("] \0\u{001b}�\n"));
+        assert!(!log.contains("hello"));
         assert_eq!(result.unwrap_err().kind(), io::ErrorKind::BrokenPipe);
         assert_eq!(device.sent, b"hello\r\n");
         assert_eq!(output, [0, 27, 255]);

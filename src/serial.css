@@ -93,6 +93,17 @@
 .serial-console header > div {
   flex-wrap: wrap;
 }
+.serial-console-actions .button[aria-pressed="true"] .button-content {
+  color: var(--error);
+}
+.serial-recording-note {
+  flex: none;
+  padding: 4px 12px;
+  color: var(--muted);
+  background: var(--card);
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
 .serial-xterm {
   min-height: 0;
   flex: 1;

@@ -45,6 +45,7 @@ pub struct AppState {
     pub inner: Arc<Inner>,
 }
 pub struct Inner {
+    pub(crate) sftp_bandwidth: crate::transfers::bandwidth::SftpBandwidth,
     pub checksums: crate::file_checksum::Jobs,
     pub databases: crate::database::Sessions,
     pub log_reader: Mutex<Option<crate::log_tail::LogReader>>,
@@ -61,6 +62,7 @@ impl AppState {
         std::fs::create_dir_all(&directory).map_err(|e| e.to_string())?;
         let state = Self {
             inner: Arc::new(Inner {
+                sftp_bandwidth: Default::default(),
                 checksums: Default::default(),
                 databases: crate::database::Sessions::default(),
                 log_reader: Mutex::new(None),
@@ -75,6 +77,10 @@ impl AppState {
         state.db()?.execute_batch("PRAGMA journal_mode=WAL; CREATE TABLE IF NOT EXISTS configuration (id INTEGER PRIMARY KEY CHECK(id=1), data TEXT NOT NULL); CREATE TABLE IF NOT EXISTS known_hosts (host_id TEXT PRIMARY KEY, hostname TEXT NOT NULL, port INTEGER NOT NULL, fingerprint TEXT NOT NULL); CREATE TABLE IF NOT EXISTS keys (id TEXT PRIMARY KEY, metadata TEXT NOT NULL); CREATE TABLE IF NOT EXISTS secrets (id TEXT PRIMARY KEY, ciphertext BLOB NOT NULL);")
             .map_err(|e| e.to_string())?;
         crate::ssh::bind_legacy_credentials(&state)?;
+        let saved = state.config()?;
+        state.inner.sftp_bandwidth.configure(
+            crate::transfers::bandwidth::settings(&saved["settings"]).unwrap_or_default(),
+        );
         Ok(state)
     }
     pub fn data_dir(&self) -> PathBuf {
@@ -103,9 +109,11 @@ impl AppState {
             return Err("Configuration must contain a hosts array".into());
         }
         validate_config(&mut value)?;
+        let limits = crate::transfers::bandwidth::settings(&value["settings"])?;
         strip_secrets(&mut value);
         let _guard = self.inner.config_lock.lock().map_err(|e| e.to_string())?;
         self.db()?.execute("INSERT INTO configuration(id,data) VALUES(1,?1) ON CONFLICT(id) DO UPDATE SET data=excluded.data", [value.to_string()]).map_err(|e| e.to_string())?;
+        self.inner.sftp_bandwidth.configure(limits);
         Ok(())
     }
     pub fn host(&self, id: &str) -> Result<Value, String> {

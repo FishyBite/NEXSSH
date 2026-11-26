@@ -65,6 +65,8 @@ export interface Settings {
   defaultPort: number;
   downloadDirectory: string;
   transferConcurrency: number;
+  sftpUploadLimitKiB: number;
+  sftpDownloadLimitKiB: number;
   sidebarCollapsed: boolean;
   reconnectAttempts: number;
   reconnectDelay: number;
@@ -168,6 +170,8 @@ export const defaultSettings: Settings = {
   defaultPort: 22,
   downloadDirectory: "",
   transferConcurrency: 2,
+  sftpUploadLimitKiB: 0,
+  sftpDownloadLimitKiB: 0,
   sidebarCollapsed: false,
   reconnectAttempts: 0,
   reconnectDelay: 5,
@@ -189,6 +193,10 @@ export function formatBytes(value: number) {
 }
 export function message(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+export const maxSftpLimitKiB = 1_048_576;
+export function validSftpLimit(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= maxSftpLimitKiB;
 }
 export function normalizeConfig(value: Partial<Config>): Config {
   const theme = validAppTheme(value.settings?.theme) ? value.settings.theme : defaultSettings.theme;
@@ -221,6 +229,8 @@ export function normalizeConfig(value: Partial<Config>): Config {
       : emptyConfig.workspaces,
     settings: {
       ...defaultSettings, ...value.settings,
+      sftpUploadLimitKiB: validSftpLimit(value.settings?.sftpUploadLimitKiB) ? value.settings.sftpUploadLimitKiB : 0,
+      sftpDownloadLimitKiB: validSftpLimit(value.settings?.sftpDownloadLimitKiB) ? value.settings.sftpDownloadLimitKiB : 0,
       theme,
       terminalTheme: validTerminalPalette(value.settings?.terminalTheme) ? value.settings.terminalTheme : defaultSettings.terminalTheme,
       terminalForeground: validTerminalForeground(value.settings?.terminalForeground) ? value.settings.terminalForeground : undefined,
