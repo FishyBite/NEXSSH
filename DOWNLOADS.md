@@ -4,7 +4,16 @@
 
 Choose **Installer** to install or update VEXSSH on Windows x64. Choose **Portable** to run it directly with WebView2 already installed. Versions marked `rc` are release candidates.
 
-## 1.0.0-rc.11 · Latest download
+## 1.0.0-rc.12 · Latest download
+
+26 November 2026
+
+- The host cards, search filters, and recent transfers now line up with the page actions across the window. The card grid adjusts as you resize the window, and the sidebar uses less vertical space on shorter screens.
+- The workspace header and footer now show the SSH host and latency only for a live connection. Reopening a disconnected tab no longer makes the Hosts page show an old session as the current host.
+
+[Installer](https://github.com/FishyBite/VEXSSH/releases/download/v1.0.0-rc.12/VEXSSH-1.0.0-rc.12-Windows-x64-Online-Setup.exe) · [Portable](https://github.com/FishyBite/VEXSSH/releases/download/v1.0.0-rc.12/VEXSSH-1.0.0-rc.12-Windows-x64-Portable.exe) · [SHA-256](https://github.com/FishyBite/VEXSSH/releases/download/v1.0.0-rc.12/SHA256SUMS.txt) · [Full release notes](https://github.com/FishyBite/VEXSSH/releases/tag/v1.0.0-rc.12)
+
+## 1.0.0-rc.11
 
 26 November 2026
 
