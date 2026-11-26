@@ -82,7 +82,7 @@ A matching hash confirms that the file matches the published build. Windows Smar
 
 ## Application data
 
-The 1.1.0 Windows download uses the same profile and vault locations as the previous Windows installers. To build this release with those locations, check out the `v1.1.0` tag. Development builds from `main` use their own storage.
+This Windows build uses the same profile and vault locations as the previous Windows installers.
 
 ## Run on Windows
 

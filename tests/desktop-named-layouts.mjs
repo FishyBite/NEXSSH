@@ -29,7 +29,7 @@ export async function exerciseNamedLayouts({page, expect, fixture, nav}) {
   await button("Save current split").click();
   const open = button("Open layout Ops pair");
   await expect(open).toBeVisible();
-  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("vexssh.layouts.v1.fixture-workspace"))[0]);
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("nexssh.layouts.v1.fixture-workspace"))[0]);
   assert.equal(saved.ratio, ratio);
   const files = saved.panes.find(pane => pane.view === "Files" && pane.hostId === second.id);
   assert.equal(files.hostId, second.id);

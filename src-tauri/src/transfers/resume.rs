@@ -101,7 +101,7 @@ fn remote_hash(
 
 fn stage_name(destination: &str, nonce: &str) -> Result<PathBuf, String> {
     let nonce = uuid::Uuid::parse_str(nonce).map_err(|_| "Invalid partial-file identity")?;
-    Ok(PathBuf::from(format!("{destination}.vexssh-{nonce}.part")))
+    Ok(PathBuf::from(format!("{destination}.nexssh-{nonce}.part")))
 }
 
 pub(super) fn discard_verified(
