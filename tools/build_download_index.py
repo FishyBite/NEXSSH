@@ -74,6 +74,7 @@ def render(releases):
     versions.sort(key=lambda entry: entry[0], reverse=True)
     lines = [
         "# VEXSSH downloads", "",
+        f"[Open GitHub Releases](https://github.com/{REPO}/releases) for Windows downloads and release notes.", "",
         "Choose **Installer** to install or update VEXSSH on Windows x64. "
         "Choose **Portable** to run it directly with WebView2 already installed. "
         "Versions marked `rc` are release candidates.",

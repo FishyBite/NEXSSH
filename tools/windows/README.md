@@ -51,4 +51,4 @@ Inno uses the named signing tool for Setup and its uninstaller. Test the install
 
 ## Release notes
 
-Start the GitHub release description with `## What's changed` and a short list of changes users will notice. Put installation or verification details under a separate heading. Publishing or editing the release refreshes its section on the Windows downloads page.
+Start the GitHub release description with `## What's changed` and a short list of changes users will notice. Under `## Windows downloads`, link **Installer** and **Portable** directly to the Windows executables attached to that tag. The repository's download button opens GitHub Releases.

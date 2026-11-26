@@ -1,5 +1,7 @@
 # VEXSSH downloads
 
+[Open GitHub Releases](https://github.com/FishyBite/VEXSSH/releases) for Windows downloads and release notes.
+
 Choose **Installer** to install or update VEXSSH on Windows x64. Choose **Portable** to run it directly with WebView2 already installed. Versions marked `rc` are release candidates.
 
 ## 1.0.0-rc.11 · Latest download

@@ -6,7 +6,7 @@
 
 <p align="center">SSH · SFTP/SCP · Serial · Databases</p>
 
-<p align="center"><strong><a href="https://github.com/FishyBite/VEXSSH/blob/main/DOWNLOADS.md">Download for Windows</a></strong> · <a href="#preview">Screenshots</a></p>
+<p align="center"><strong><a href="https://github.com/FishyBite/VEXSSH/releases">Download for Windows</a></strong> · <a href="#preview">Screenshots</a></p>
 
 VEXSSH is a Windows app for working with servers and serial devices. Open a saved host, switch to SFTP to move or edit files, then return to the same shell.
 
@@ -65,7 +65,7 @@ Use the color picker or enter a hex value to change ordinary terminal text. Prog
 
 ## Download
 
-Use **Download for Windows** at the top of this page. Each version lists its changes and Windows downloads together, with the newest version first.
+Open **Download for Windows** to see the GitHub Releases page. Each version lists its changes and has direct links to the Windows x64 installer and portable executable.
 
 - **Online Setup** installs or upgrades VEXSSH, creates a desktop shortcut, and downloads WebView2 if needed.
 - **Portable** runs directly on a computer that already has WebView2.
