@@ -10,6 +10,8 @@
 
 VEXSSH is a Windows app for working with servers and serial devices. Open a saved host, switch to SFTP to move or edit files, then return to the same shell.
 
+VEXSSH project code is available under the [MIT License](LICENSE). Third-party components retain their own licenses. See the [Code signing policy](CODE_SIGNING.md) for Windows releases.
+
 ## Preview
 
 Screenshots from RC8 with sample connections.
